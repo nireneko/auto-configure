@@ -22,6 +22,7 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.Gemini, "Google Gemini CLI"},
 		{domain.ClaudeCode, "Claude Code (Anthropic)"},
 		{domain.Flatpak, "Flatpak"},
+		{domain.Bitwarden, "Bitwarden"},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.id), func(t *testing.T) {
@@ -64,8 +65,8 @@ func TestAllSoftware(t *testing.T) {
 func TestGetSteps(t *testing.T) {
 	steps := domain.GetSteps()
 
-	if len(steps) != 7 {
-		t.Fatalf("Expected 7 steps, got %d", len(steps))
+	if len(steps) != 8 {
+		t.Fatalf("Expected 8 steps, got %d", len(steps))
 	}
 
 	// Step 1: Browsers (Not critical)
@@ -113,5 +114,13 @@ func TestGetSteps(t *testing.T) {
 	// Step 7: Flatpak (Not critical)
 	if steps[6].ID != "flatpak" {
 		t.Errorf("Step 7 ID = %s, want flatpak", steps[6].ID)
+	}
+
+	// Step 8: Apps (Not critical)
+	if steps[7].ID != "apps" {
+		t.Errorf("Step 8 ID = %s, want apps", steps[7].ID)
+	}
+	if len(steps[7].Software) != 1 {
+		t.Errorf("Step 8 should have 1 app, got %d", len(steps[7].Software))
 	}
 }

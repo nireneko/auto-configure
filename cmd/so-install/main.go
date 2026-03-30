@@ -51,6 +51,7 @@ func main() {
 		domain.Gemini:   npm.NewNpmInstaller(executor, "@google/gemini-cli", "gemini", domain.Gemini),
 		domain.ClaudeCode: npm.NewNpmInstaller(executor, "@anthropic-ai/claude-code", "claude", domain.ClaudeCode),
 		domain.Flatpak:  flatpak.NewFlatpakInstaller(executor, detector),
+		domain.Bitwarden: flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 	}
 	// 4. Build TUI model and inject osInfo
 	model := tui.NewModel(installerMap)

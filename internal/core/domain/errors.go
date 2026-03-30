@@ -30,7 +30,10 @@ type InstallError struct {
 }
 
 func (e InstallError) Error() string {
-	return fmt.Sprintf("failed to install %s: command '%s' exited with code %d", e.Software, e.Command, e.ExitCode)
+	if e.Stderr != "" {
+		return fmt.Sprintf("failed to install %s: command '%s' failed: %s", e.Software, e.Command, e.Stderr)
+	}
+	return fmt.Sprintf("failed to install %s: command '%s' failed", e.Software, e.Command)
 }
 
 type AptLockError struct {
