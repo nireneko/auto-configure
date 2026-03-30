@@ -160,7 +160,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.validationErr = "Select at least one item"
 				return m, nil
 			}
-			m.selected = sel
+			// Prepend mandatory system prep steps
+			m.selected = append([]domain.SoftwareID{domain.SystemUpdate, domain.BaseDeps}, sel...)
 			return m, func() tea.Msg { return startInstallMsg{} }
 		case "q", "ctrl+c":
 			return m, tea.Quit

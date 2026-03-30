@@ -11,11 +11,13 @@ import (
 	"github.com/so-install/internal/infrastructure/ddev"
 	"github.com/so-install/internal/infrastructure/docker"
 	"github.com/so-install/internal/infrastructure/flatpak"
+	"github.com/so-install/internal/infrastructure/homebrew"
 	"github.com/so-install/internal/infrastructure/npm"
 	"github.com/so-install/internal/infrastructure/nvm"
 	"github.com/so-install/internal/infrastructure/openvpn"
 	"github.com/so-install/internal/infrastructure/osrelease"
 	"github.com/so-install/internal/infrastructure/shell"
+	"github.com/so-install/internal/infrastructure/apt"
 	"github.com/so-install/internal/presentation/tui"
 )
 
@@ -40,6 +42,8 @@ func main() {
 	// 3. Build concrete installers
 	executor := shell.NewShellExecutor()
 	installerMap := map[domain.SoftwareID]domain.SoftwareInstaller{
+		domain.SystemUpdate: apt.NewAptUpdateInstaller(executor),
+		domain.BaseDeps:     apt.NewBaseDepsInstaller(executor),
 		domain.Brave:    browsers.NewBraveInstaller(executor),
 		domain.Firefox:  browsers.NewFirefoxInstaller(executor),
 		domain.Chrome:   browsers.NewChromeInstaller(executor),
@@ -52,6 +56,7 @@ func main() {
 		domain.ClaudeCode: npm.NewNpmInstaller(executor, "@anthropic-ai/claude-code", "claude", domain.ClaudeCode),
 		domain.Flatpak:  flatpak.NewFlatpakInstaller(executor, detector),
 		domain.Bitwarden: flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
+		domain.Homebrew:  homebrew.NewHomebrewInstaller(executor),
 	}
 	// 4. Build TUI model and inject osInfo
 	model := tui.NewModel(installerMap)

@@ -4,6 +4,8 @@ package domain
 type SoftwareID string
 
 const (
+	SystemUpdate SoftwareID = "system-update"
+	BaseDeps     SoftwareID = "base-deps"
 	Brave    SoftwareID = "brave"
 	Firefox  SoftwareID = "firefox"
 	Chrome   SoftwareID = "chrome"
@@ -16,6 +18,7 @@ const (
 	ClaudeCode SoftwareID = "claude"
 	Flatpak  SoftwareID = "flatpak"
 	Bitwarden SoftwareID = "bitwarden"
+	Homebrew  SoftwareID = "homebrew"
 )
 
 // InstallStep defines a group of software to be installed together.
@@ -28,6 +31,11 @@ type InstallStep struct {
 // GetSteps returns the predefined installation phases.
 func GetSteps() []InstallStep {
 	return []InstallStep{
+		{
+			ID:       "system-prep",
+			Software: []SoftwareID{SystemUpdate, BaseDeps},
+			Critical: true,
+		},
 		{
 			ID:       "browsers",
 			Software: []SoftwareID{Brave, Firefox, Chrome, Chromium},
@@ -65,7 +73,7 @@ func GetSteps() []InstallStep {
 		},
 		{
 			ID:       "apps",
-			Software: []SoftwareID{Bitwarden},
+			Software: []SoftwareID{Bitwarden, Homebrew},
 			Critical: false,
 		},
 	}
@@ -73,12 +81,16 @@ func GetSteps() []InstallStep {
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Flatpak, Bitwarden}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Flatpak, Bitwarden, Homebrew}
 }
 
 // DisplayName returns a human-readable name for the software.
 func (s SoftwareID) DisplayName() string {
 	switch s {
+	case SystemUpdate:
+		return "System Update"
+	case BaseDeps:
+		return "Base Dependencies"
 	case Brave:
 		return "Brave"
 	case Firefox:
@@ -103,6 +115,8 @@ func (s SoftwareID) DisplayName() string {
 		return "Flatpak"
 	case Bitwarden:
 		return "Bitwarden"
+	case Homebrew:
+		return "Homebrew"
 	default:
 		return string(s)
 	}
