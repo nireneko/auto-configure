@@ -16,7 +16,11 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.Chrome, "Google Chrome"},
 		{domain.Chromium, "Chromium"},
 		{domain.Docker, "Docker CE"},
-		{domain.SoftwareID("ddev"), "DDEV"}, // RED: ddev doesn't exist as constant yet
+		{domain.Ddev, "DDEV"},
+		{domain.OpenVpn, "OpenVPN"},
+		{domain.Nvm, "NVM & NPM"},
+		{domain.Gemini, "Google Gemini CLI"},
+		{domain.ClaudeCode, "Claude Code (Anthropic)"},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.id), func(t *testing.T) {
@@ -59,8 +63,8 @@ func TestAllSoftware(t *testing.T) {
 func TestGetSteps(t *testing.T) {
 	steps := domain.GetSteps()
 
-	if len(steps) != 4 {
-		t.Fatalf("Expected 4 steps, got %d", len(steps))
+	if len(steps) != 6 {
+		t.Fatalf("Expected 6 steps, got %d", len(steps))
 	}
 
 	// Step 1: Browsers (Not critical)
@@ -90,5 +94,18 @@ func TestGetSteps(t *testing.T) {
 	// Step 4: OpenVPN (Not critical)
 	if steps[3].ID != "openvpn" {
 		t.Errorf("Step 4 ID = %s, want openvpn", steps[3].ID)
+	}
+
+	// Step 5: NVM (Not critical)
+	if steps[4].ID != "nvm" {
+		t.Errorf("Step 5 ID = %s, want nvm", steps[4].ID)
+	}
+
+	// Step 6: AI CLI (Not critical)
+	if steps[5].ID != "ai-cli" {
+		t.Errorf("Step 6 ID = %s, want ai-cli", steps[5].ID)
+	}
+	if len(steps[5].Software) != 2 {
+		t.Errorf("Step 6 should have 2 AI tools, got %d", len(steps[5].Software))
 	}
 }

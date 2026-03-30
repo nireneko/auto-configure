@@ -11,6 +11,9 @@ const (
 	Docker   SoftwareID = "docker"
 	Ddev     SoftwareID = "ddev"
 	OpenVpn  SoftwareID = "openvpn"
+	Nvm      SoftwareID = "nvm"
+	Gemini   SoftwareID = "gemini"
+	ClaudeCode SoftwareID = "claude"
 )
 
 // InstallStep defines a group of software to be installed together.
@@ -43,12 +46,22 @@ func GetSteps() []InstallStep {
 			Software: []SoftwareID{OpenVpn},
 			Critical: false,
 		},
+		{
+			ID:       "nvm",
+			Software: []SoftwareID{Nvm},
+			Critical: false,
+		},
+		{
+			ID:       "ai-cli",
+			Software: []SoftwareID{Gemini, ClaudeCode},
+			Critical: false,
+		},
 	}
 }
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -68,6 +81,12 @@ func (s SoftwareID) DisplayName() string {
 		return "DDEV"
 	case OpenVpn:
 		return "OpenVPN"
+	case Nvm:
+		return "NVM & NPM"
+	case Gemini:
+		return "Google Gemini CLI"
+	case ClaudeCode:
+		return "Claude Code (Anthropic)"
 	default:
 		return string(s)
 	}

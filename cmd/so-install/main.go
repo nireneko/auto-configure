@@ -10,6 +10,8 @@ import (
 	"github.com/so-install/internal/infrastructure/browsers"
 	"github.com/so-install/internal/infrastructure/ddev"
 	"github.com/so-install/internal/infrastructure/docker"
+	"github.com/so-install/internal/infrastructure/npm"
+	"github.com/so-install/internal/infrastructure/nvm"
 	"github.com/so-install/internal/infrastructure/openvpn"
 	"github.com/so-install/internal/infrastructure/osrelease"
 	"github.com/so-install/internal/infrastructure/shell"
@@ -44,6 +46,9 @@ func main() {
 		domain.Docker:   docker.NewDockerInstaller(executor, os.Getenv("SUDO_USER")),
 		domain.Ddev:     ddev.NewDdevInstaller(executor),
 		domain.OpenVpn:  openvpn.NewOpenVpnInstaller(executor, osInfo),
+		domain.Nvm:      nvm.NewNvmInstaller(executor),
+		domain.Gemini:   npm.NewNpmInstaller(executor, "@google/gemini-cli", "gemini", domain.Gemini),
+		domain.ClaudeCode: npm.NewNpmInstaller(executor, "@anthropic-ai/claude-code", "claude", domain.ClaudeCode),
 	}
 	// 4. Build TUI model and inject osInfo
 	model := tui.NewModel(installerMap)
