@@ -9,31 +9,33 @@ const (
 	Chrome   SoftwareID = "chrome"
 	Chromium SoftwareID = "chromium"
 	Docker   SoftwareID = "docker"
-)
+	Ddev     SoftwareID = "ddev"
+	)
 
-// AllSoftware returns all supported software in display order.
-func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker}
-}
+	// AllSoftware returns all supported software in display order.
+	func AllSoftware() []SoftwareID {
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev}
+	}
 
-// DisplayName returns a human-readable name for the software.
-func (s SoftwareID) DisplayName() string {
+	// DisplayName returns a human-readable name for the software.
+	func (s SoftwareID) DisplayName() string {
 	switch s {
 	case Brave:
-		return "Brave"
+	        return "Brave"
 	case Firefox:
-		return "Firefox"
+	        return "Firefox"
 	case Chrome:
-		return "Google Chrome"
+	        return "Google Chrome"
 	case Chromium:
-		return "Chromium"
+	        return "Chromium"
 	case Docker:
-		return "Docker CE"
+	        return "Docker CE"
+	case Ddev:
+	        return "DDEV"
 	default:
-		return string(s)
+	        return string(s)
 	}
-}
-
+	}
 // SoftwareInstaller handles installation of specific software.
 type SoftwareInstaller interface {
 	Install() error

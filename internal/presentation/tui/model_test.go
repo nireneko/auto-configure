@@ -126,6 +126,20 @@ func TestModel_SoftwareSelectLabelUpdated(t *testing.T) {
 }
 
 func TestModel_DockerAppearsInSoftwareList(t *testing.T) {
+        installers := makeInstallers(nil, nil)
+        m := tui.NewModel(installers)
+        m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
+        if cmd != nil {
+                msg := cmd()
+                m2, _ = m2.Update(msg)
+        }
+        view := m2.View()
+        if !strings.Contains(view, "Docker CE") {
+                t.Errorf("expected 'Docker CE' in software list, got: %s", view)
+        }
+}
+
+func TestModel_DdevAppearsInSoftwareList(t *testing.T) {
 	installers := makeInstallers(nil, nil)
 	m := tui.NewModel(installers)
 	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
@@ -134,7 +148,7 @@ func TestModel_DockerAppearsInSoftwareList(t *testing.T) {
 		m2, _ = m2.Update(msg)
 	}
 	view := m2.View()
-	if !strings.Contains(view, "Docker CE") {
-		t.Errorf("expected 'Docker CE' in software list, got: %s", view)
+	if !strings.Contains(view, "DDEV") {
+		t.Errorf("expected 'DDEV' in software list, got: %s", view)
 	}
 }
