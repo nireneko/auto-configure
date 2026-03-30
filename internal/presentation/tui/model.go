@@ -105,6 +105,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Step.Critical {
 			for _, r := range msg.Results {
 				if r.Err != nil {
+					m.state = stateSummary
 					return m, func() tea.Msg { return AllInstallsDoneMsg{Results: m.results} }
 				}
 			}
@@ -112,6 +113,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.currentStep++
 		if m.currentStep >= len(m.steps) {
+			m.state = stateSummary
 			return m, func() tea.Msg { return AllInstallsDoneMsg{Results: m.results} }
 		}
 		return m, m.runCurrentStep()
@@ -301,6 +303,9 @@ func (m Model) viewSoftwareSelect() string {
 }
 
 func (m Model) viewProgress() string {
+	if m.currentStep >= len(m.steps) {
+		return "\n  Finalizing installation summary...\n"
+	}
 	currentStep := m.steps[m.currentStep]
 	out := "\n  Phase: " + currentStep.ID + "...\n\n"
 

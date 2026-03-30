@@ -179,3 +179,61 @@ func TestModel_StepTransitions(t *testing.T) {
 		t.Fatal("expected command to run next step")
 	}
 }
+
+func TestModel_NoPanicOnLastStepFinished(t *testing.T) {
+	installers := makeInstallers(nil, nil)
+	tm := tui.NewModel(installers)
+
+	// Reach stateProgress
+	m_update, cmd := tm.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
+	m := m_update.(tui.Model)
+	if cmd != nil {
+		m_update, _ = m.Update(cmd()) // PreInstallCheckDoneMsg
+		m = m_update.(tui.Model)
+	}
+
+	// Manually select all to avoid empty selection
+	// (we can't access fields but we can send space keys or just let it be if defaults are set)
+	// Actually, getSelected() returns based on m.checked which is set from pre-install check
+	// Since all are false in our mock, we need to toggle one.
+	// Let's send a space to toggle the first one.
+	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+	m = m_update.(tui.Model)
+
+	m_update, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = m_update.(tui.Model)
+	if cmd != nil {
+		m_update, _ = m.Update(cmd()) // startInstallMsg
+		m = m_update.(tui.Model)
+	}
+
+	steps := domain.GetSteps()
+	// Finish all steps but the last one
+	for i := 0; i < len(steps)-1; i++ {
+		m_update, _ = m.Update(tui.StepFinishedMsg{
+			Step:    steps[i],
+			Results: []domain.InstallResult{{Software: steps[i].Software[0], Err: nil}},
+		})
+		m = m_update.(tui.Model)
+	}
+
+	// Finish LAST step
+	lastStep := steps[len(steps)-1]
+	m_update, _ = m.Update(tui.StepFinishedMsg{
+		Step:    lastStep,
+		Results: []domain.InstallResult{{Software: lastStep.Software[0], Err: nil}},
+	})
+	m = m_update.(tui.Model)
+
+	// Now m should be in the summary state:
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("View() panicked: %v", r)
+		}
+	}()
+
+	view := m.View()
+	if !strings.Contains(view, "Installation complete!") {
+		t.Errorf("expected summary view after last step, got: %s", view)
+	}
+}
