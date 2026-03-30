@@ -40,7 +40,8 @@ func TestBraveInstaller_IsInstalled_False(t *testing.T) {
 
 func TestBraveInstaller_Install_HappyPath(t *testing.T) {
 	m := &mocks.MockExecutor{}
-	// 4 commands: curl gpg, curl sources, apt update, apt install
+	// 5 commands: mkdir, wget gpg, sh -c tee repo, apt update, apt install
+	m.AddResponse("", "", nil)
 	m.AddResponse("", "", nil)
 	m.AddResponse("", "", nil)
 	m.AddResponse("", "", nil)
@@ -50,19 +51,20 @@ func TestBraveInstaller_Install_HappyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(m.Calls) != 4 {
-		t.Fatalf("expected 4 calls, got %d: %v", len(m.Calls), m.Calls)
+	if len(m.Calls) != 5 {
+		t.Fatalf("expected 5 calls, got %d: %v", len(m.Calls), m.Calls)
 	}
 	// Verify exact command sequence
-	assertCall(t, m.Calls[0], "curl", "-fsSLo", "/usr/share/keyrings/brave-browser-archive-keyring.gpg", "https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg")
-	assertCall(t, m.Calls[1], "curl", "-fsSLo", "/etc/apt/sources.list.d/brave-browser-release.sources", "https://brave-browser-apt-release.s3.brave.com/brave-browser.sources")
-	assertCall(t, m.Calls[2], "apt", "update")
-	assertCall(t, m.Calls[3], "apt", "install", "-y", "brave-browser")
+	assertCall(t, m.Calls[0], "mkdir", "-p", "/usr/share/keyrings")
+	assertCall(t, m.Calls[1], "wget", "-qO", "/usr/share/keyrings/brave-browser-archive-keyring.gpg", "https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg")
+	assertCall(t, m.Calls[2], "sh", "-c", "echo 'deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main' | tee /etc/apt/sources.list.d/brave-browser-release.list")
+	assertCall(t, m.Calls[3], "apt", "update")
+	assertCall(t, m.Calls[4], "apt", "install", "-y", "brave-browser")
 }
 
 func TestBraveInstaller_Install_StopsOnFirstFailure(t *testing.T) {
 	m := &mocks.MockExecutor{}
-	m.AddResponse("", "network error", errors.New("exit 1"))
+	m.AddResponse("", "permission denied", errors.New("exit 1"))
 	inst := browsers.NewBraveInstaller(m)
 	err := inst.Install()
 	if err == nil {
@@ -75,8 +77,9 @@ func TestBraveInstaller_Install_StopsOnFirstFailure(t *testing.T) {
 
 func TestBraveInstaller_Install_AptLockReturnsAptLockError(t *testing.T) {
 	m := &mocks.MockExecutor{}
-	m.AddResponse("", "", nil) // curl gpg ok
-	m.AddResponse("", "", nil) // curl sources ok
+	m.AddResponse("", "", nil) // mkdir ok
+	m.AddResponse("", "", nil) // wget gpg ok
+	m.AddResponse("", "", nil) // sh tee repo ok
 	m.AddResponse("", "", nil) // apt update ok
 	m.AddResponse("", "E: Could not get lock /var/lib/dpkg/lock", errors.New("exit 100"))
 	inst := browsers.NewBraveInstaller(m)
@@ -92,9 +95,10 @@ func TestBraveInstaller_Install_AptLockReturnsAptLockError(t *testing.T) {
 
 func TestBraveInstaller_Install_NonLockErrorReturnsInstallError(t *testing.T) {
 	m := &mocks.MockExecutor{}
-	m.AddResponse("", "", nil)
-	m.AddResponse("", "", nil)
-	m.AddResponse("", "", nil)
+	m.AddResponse("", "", nil) // mkdir ok
+	m.AddResponse("", "", nil) // wget gpg ok
+	m.AddResponse("", "", nil) // sh tee repo ok
+	m.AddResponse("", "", nil) // apt update ok
 	m.AddResponse("", "E: Package not found", errors.New("exit 100"))
 	inst := browsers.NewBraveInstaller(m)
 	err := inst.Install()

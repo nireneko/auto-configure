@@ -11,11 +11,11 @@ import (
 	"github.com/so-install/pkg/mocks"
 )
 
-func makeInstallers(installed map[domain.BrowserID]bool, installErrs map[domain.BrowserID]error) map[domain.BrowserID]domain.BrowserInstaller {
-	result := make(map[domain.BrowserID]domain.BrowserInstaller)
-	for _, id := range domain.AllBrowsers() {
-		result[id] = &mocks.MockBrowserInstaller{
-			BrowserID:         id,
+func makeInstallers(installed map[domain.SoftwareID]bool, installErrs map[domain.SoftwareID]error) map[domain.SoftwareID]domain.SoftwareInstaller {
+	result := make(map[domain.SoftwareID]domain.SoftwareInstaller)
+	for _, id := range domain.AllSoftware() {
+		result[id] = &mocks.MockSoftwareInstaller{
+			SoftwareID:        id,
 			IsInstalledResult: installed[id],
 			InstallErr:        installErrs[id],
 		}
@@ -40,7 +40,7 @@ func TestModel_EnterOnWelcomeTriggersDetection(t *testing.T) {
 	_ = m2
 }
 
-func TestModel_BrowserSelectShowsAllBrowsers(t *testing.T) {
+func TestModel_SoftwareSelectShowsAllSoftware(t *testing.T) {
 	installers := makeInstallers(nil, nil)
 	m := tui.NewModel(installers)
 	m2, _ := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
@@ -72,8 +72,8 @@ func TestModel_ExitCode0WhenAllSucceed(t *testing.T) {
 	m := tui.NewModel(installers)
 	m2, _ := m.Update(tui.AllInstallsDoneMsg{
 		Results: []domain.InstallResult{
-			{Browser: domain.Brave, Err: nil},
-			{Browser: domain.Firefox, Err: nil},
+			{Software: domain.Brave, Err: nil},
+			{Software: domain.Firefox, Err: nil},
 		},
 	})
 	model := m2.(tui.Model)
@@ -87,8 +87,8 @@ func TestModel_ExitCode1WhenAnyFails(t *testing.T) {
 	m := tui.NewModel(installers)
 	m2, _ := m.Update(tui.AllInstallsDoneMsg{
 		Results: []domain.InstallResult{
-			{Browser: domain.Brave, Err: nil},
-			{Browser: domain.Firefox, Err: errors.New("install failed")},
+			{Software: domain.Brave, Err: nil},
+			{Software: domain.Firefox, Err: errors.New("install failed")},
 		},
 	})
 	model := m2.(tui.Model)
@@ -108,5 +108,33 @@ func TestModel_QuitOnSummary(t *testing.T) {
 	msg := cmd()
 	if _, ok := msg.(tea.QuitMsg); !ok {
 		t.Errorf("expected tea.QuitMsg, got %T", msg)
+	}
+}
+
+func TestModel_SoftwareSelectLabelUpdated(t *testing.T) {
+	installers := makeInstallers(nil, nil)
+	m := tui.NewModel(installers)
+	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
+	if cmd != nil {
+		msg := cmd()
+		m2, _ = m2.Update(msg)
+	}
+	view := m2.View()
+	if !strings.Contains(view, "Select software to install") {
+		t.Errorf("expected 'Select software to install' label, got: %s", view)
+	}
+}
+
+func TestModel_DockerAppearsInSoftwareList(t *testing.T) {
+	installers := makeInstallers(nil, nil)
+	m := tui.NewModel(installers)
+	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
+	if cmd != nil {
+		msg := cmd()
+		m2, _ = m2.Update(msg)
+	}
+	view := m2.View()
+	if !strings.Contains(view, "Docker CE") {
+		t.Errorf("expected 'Docker CE' in software list, got: %s", view)
 	}
 }

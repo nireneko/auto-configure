@@ -19,10 +19,10 @@ func NewChromeInstaller(executor domain.Executor) *ChromeInstaller {
 	return &ChromeInstaller{executor: executor}
 }
 
-var _ domain.BrowserInstaller = (*ChromeInstaller)(nil)
+var _ domain.SoftwareInstaller = (*ChromeInstaller)(nil)
 
-// ID returns the BrowserID for Chrome.
-func (c *ChromeInstaller) ID() domain.BrowserID { return domain.Chrome }
+// ID returns the SoftwareID for Chrome.
+func (c *ChromeInstaller) ID() domain.SoftwareID { return domain.Chrome }
 
 // IsInstalled checks if google-chrome-stable is already installed.
 func (c *ChromeInstaller) IsInstalled() (bool, error) {
@@ -39,7 +39,7 @@ func (c *ChromeInstaller) Install() error {
 	for _, step := range steps {
 		_, stderr, err := c.executor.Execute(step[0], step[1:]...)
 		if err != nil {
-			return wrapInstallError("google-chrome", step[0], step[1:], "", stderr, err)
+			return domain.WrapInstallError("google-chrome", step[0], step[1:], "", stderr, err)
 		}
 	}
 	return nil

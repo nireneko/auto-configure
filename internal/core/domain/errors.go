@@ -1,6 +1,9 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type OsNotSupportedError struct {
 	OS      string
@@ -18,7 +21,7 @@ func (e PrivilegeError) Error() string {
 }
 
 type InstallError struct {
-	Browser  string
+	Software string
 	Command  string
 	Args     []string
 	Stdout   string
@@ -27,7 +30,7 @@ type InstallError struct {
 }
 
 func (e InstallError) Error() string {
-	return fmt.Sprintf("failed to install %s: command '%s' exited with code %d", e.Browser, e.Command, e.ExitCode)
+	return fmt.Sprintf("failed to install %s: command '%s' exited with code %d", e.Software, e.Command, e.ExitCode)
 }
 
 type AptLockError struct {
@@ -37,4 +40,19 @@ type AptLockError struct {
 
 func (e AptLockError) Error() string {
 	return fmt.Sprintf("APT lock held: %s: %s", e.LockPath, e.InstallError.Error())
+}
+
+// WrapInstallError wraps a shell error as InstallError or AptLockError.
+func WrapInstallError(software, cmd string, args []string, stdout, stderr string, err error) error {
+	base := InstallError{
+		Software: software,
+		Command:  cmd,
+		Args:     args,
+		Stdout:   stdout,
+		Stderr:   stderr,
+	}
+	if strings.Contains(stderr, "Could not get lock") {
+		return AptLockError{InstallError: base}
+	}
+	return base
 }

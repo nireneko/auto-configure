@@ -7,12 +7,12 @@ type OSDetectedMsg struct {
 	Info *domain.OSInfo
 }
 
-// InstallProgressMsg reports a single browser's installation result.
+// InstallProgressMsg reports a single software's installation result.
 type InstallProgressMsg struct {
 	Result domain.InstallResult
 }
 
-// AllInstallsDoneMsg is sent when all selected browsers have been processed.
+// AllInstallsDoneMsg is sent when all selected software has been processed.
 type AllInstallsDoneMsg struct {
 	Results []domain.InstallResult
 }

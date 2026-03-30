@@ -12,16 +12,16 @@ import (
 
 func noSleep(_ time.Duration) {}
 
-func TestInstallBrowsers_AlreadyInstalled(t *testing.T) {
-	m := &mocks.MockBrowserInstaller{
-		BrowserID:         domain.Brave,
+func TestInstallSoftware_AlreadyInstalled(t *testing.T) {
+	m := &mocks.MockSoftwareInstaller{
+		SoftwareID:        domain.Brave,
 		IsInstalledResult: true,
 	}
-	uc := usecases.NewInstallBrowsersUseCase(
-		map[domain.BrowserID]domain.BrowserInstaller{domain.Brave: m},
+	uc := usecases.NewInstallSoftwareUseCase(
+		map[domain.SoftwareID]domain.SoftwareInstaller{domain.Brave: m},
 		noSleep,
 	)
-	results := uc.Execute([]domain.BrowserID{domain.Brave})
+	results := uc.Execute([]domain.SoftwareID{domain.Brave})
 
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -30,21 +30,21 @@ func TestInstallBrowsers_AlreadyInstalled(t *testing.T) {
 		t.Errorf("expected AlreadyInstalled=true, Err=nil; got %+v", results[0])
 	}
 	if m.InstallCalled {
-		t.Error("Install should not have been called for already-installed browser")
+		t.Error("Install should not have been called for already-installed software")
 	}
 }
 
-func TestInstallBrowsers_SuccessfulInstall(t *testing.T) {
-	m := &mocks.MockBrowserInstaller{
-		BrowserID:         domain.Firefox,
+func TestInstallSoftware_SuccessfulInstall(t *testing.T) {
+	m := &mocks.MockSoftwareInstaller{
+		SoftwareID:        domain.Firefox,
 		IsInstalledResult: false,
 		InstallErr:        nil,
 	}
-	uc := usecases.NewInstallBrowsersUseCase(
-		map[domain.BrowserID]domain.BrowserInstaller{domain.Firefox: m},
+	uc := usecases.NewInstallSoftwareUseCase(
+		map[domain.SoftwareID]domain.SoftwareInstaller{domain.Firefox: m},
 		noSleep,
 	)
-	results := uc.Execute([]domain.BrowserID{domain.Firefox})
+	results := uc.Execute([]domain.SoftwareID{domain.Firefox})
 
 	if results[0].Err != nil || results[0].AlreadyInstalled {
 		t.Errorf("expected success, got %+v", results[0])
@@ -54,14 +54,14 @@ func TestInstallBrowsers_SuccessfulInstall(t *testing.T) {
 	}
 }
 
-func TestInstallBrowsers_AptLockRetries(t *testing.T) {
-	aptErr := domain.AptLockError{InstallError: domain.InstallError{Browser: "brave"}}
+func TestInstallSoftware_AptLockRetries(t *testing.T) {
+	aptErr := domain.AptLockError{InstallError: domain.InstallError{Software: "brave"}}
 	installer := &countingInstaller{id: domain.Brave, err: aptErr}
-	uc := usecases.NewInstallBrowsersUseCase(
-		map[domain.BrowserID]domain.BrowserInstaller{domain.Brave: installer},
+	uc := usecases.NewInstallSoftwareUseCase(
+		map[domain.SoftwareID]domain.SoftwareInstaller{domain.Brave: installer},
 		noSleep,
 	)
-	results := uc.Execute([]domain.BrowserID{domain.Brave})
+	results := uc.Execute([]domain.SoftwareID{domain.Brave})
 
 	if results[0].Err == nil {
 		t.Fatal("expected AptLockError after exhausted retries")
@@ -71,19 +71,19 @@ func TestInstallBrowsers_AptLockRetries(t *testing.T) {
 	}
 }
 
-func TestInstallBrowsers_SequentialOrder(t *testing.T) {
-	order := []domain.BrowserID{}
+func TestInstallSoftware_SequentialOrder(t *testing.T) {
+	order := []domain.SoftwareID{}
 	braveInst := &orderTracker{id: domain.Brave, order: &order}
 	firefoxInst := &orderTracker{id: domain.Firefox, order: &order}
 
-	uc := usecases.NewInstallBrowsersUseCase(
-		map[domain.BrowserID]domain.BrowserInstaller{
+	uc := usecases.NewInstallSoftwareUseCase(
+		map[domain.SoftwareID]domain.SoftwareInstaller{
 			domain.Brave:   braveInst,
 			domain.Firefox: firefoxInst,
 		},
 		noSleep,
 	)
-	uc.Execute([]domain.BrowserID{domain.Brave, domain.Firefox})
+	uc.Execute([]domain.SoftwareID{domain.Brave, domain.Firefox})
 
 	if len(order) != 2 {
 		t.Fatalf("expected 2 installs, got %d", len(order))
@@ -93,23 +93,23 @@ func TestInstallBrowsers_SequentialOrder(t *testing.T) {
 	}
 }
 
-func TestInstallBrowsers_OneFailureContinuesOthers(t *testing.T) {
-	braveInst := &mocks.MockBrowserInstaller{
-		BrowserID:  domain.Brave,
+func TestInstallSoftware_OneFailureContinuesOthers(t *testing.T) {
+	braveInst := &mocks.MockSoftwareInstaller{
+		SoftwareID: domain.Brave,
 		InstallErr: errors.New("some error"),
 	}
-	firefoxInst := &mocks.MockBrowserInstaller{
-		BrowserID: domain.Firefox,
+	firefoxInst := &mocks.MockSoftwareInstaller{
+		SoftwareID: domain.Firefox,
 	}
 
-	uc := usecases.NewInstallBrowsersUseCase(
-		map[domain.BrowserID]domain.BrowserInstaller{
+	uc := usecases.NewInstallSoftwareUseCase(
+		map[domain.SoftwareID]domain.SoftwareInstaller{
 			domain.Brave:   braveInst,
 			domain.Firefox: firefoxInst,
 		},
 		noSleep,
 	)
-	results := uc.Execute([]domain.BrowserID{domain.Brave, domain.Firefox})
+	results := uc.Execute([]domain.SoftwareID{domain.Brave, domain.Firefox})
 
 	if results[0].Err == nil {
 		t.Error("expected Brave to fail")
@@ -125,7 +125,7 @@ func TestInstallBrowsers_OneFailureContinuesOthers(t *testing.T) {
 // Test helpers
 
 type countingInstaller struct {
-	id        domain.BrowserID
+	id        domain.SoftwareID
 	err       error
 	callCount int
 }
@@ -135,11 +135,11 @@ func (c *countingInstaller) Install() error {
 	return c.err
 }
 func (c *countingInstaller) IsInstalled() (bool, error) { return false, nil }
-func (c *countingInstaller) ID() domain.BrowserID       { return c.id }
+func (c *countingInstaller) ID() domain.SoftwareID      { return c.id }
 
 type orderTracker struct {
-	id    domain.BrowserID
-	order *[]domain.BrowserID
+	id    domain.SoftwareID
+	order *[]domain.SoftwareID
 }
 
 func (o *orderTracker) Install() error {
@@ -147,4 +147,4 @@ func (o *orderTracker) Install() error {
 	return nil
 }
 func (o *orderTracker) IsInstalled() (bool, error) { return false, nil }
-func (o *orderTracker) ID() domain.BrowserID       { return o.id }
+func (o *orderTracker) ID() domain.SoftwareID      { return o.id }

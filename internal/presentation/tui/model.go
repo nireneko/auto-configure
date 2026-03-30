@@ -13,7 +13,7 @@ type appState int
 
 const (
 	stateWelcome appState = iota
-	stateBrowserSelect
+	stateSoftwareSelect
 	stateProgress
 	stateSummary
 )
@@ -22,8 +22,8 @@ const (
 type Model struct {
 	state      appState
 	osInfo     *domain.OSInfo
-	installers map[domain.BrowserID]domain.BrowserInstaller
-	selected   []domain.BrowserID
+	installers map[domain.SoftwareID]domain.SoftwareInstaller
+	selected   []domain.SoftwareID
 	results    []domain.InstallResult
 	exitCode   int
 	width      int
@@ -31,20 +31,20 @@ type Model struct {
 
 	// sub-model state
 	cursor         int
-	checked        map[domain.BrowserID]bool
-	preInstalled   map[domain.BrowserID]bool
+	checked        map[domain.SoftwareID]bool
+	preInstalled   map[domain.SoftwareID]bool
 	validationErr  string
 	currentInstall int
 	interrupted    bool
 }
 
 // NewModel creates the TUI model with the given installers.
-func NewModel(installers map[domain.BrowserID]domain.BrowserInstaller) Model {
+func NewModel(installers map[domain.SoftwareID]domain.SoftwareInstaller) Model {
 	return Model{
 		state:        stateWelcome,
 		installers:   installers,
-		checked:      make(map[domain.BrowserID]bool),
-		preInstalled: make(map[domain.BrowserID]bool),
+		checked:      make(map[domain.SoftwareID]bool),
+		preInstalled: make(map[domain.SoftwareID]bool),
 		width:        80,
 		height:       24,
 	}
@@ -79,14 +79,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case OSDetectedMsg:
 		m.osInfo = msg.Info
-		return m, m.checkInstalledBrowsers()
+		return m, m.checkInstalledSoftware()
 
 	case preInstalledCheckDoneMsg:
 		m.preInstalled = msg.results
 		for id, installed := range msg.results {
 			m.checked[id] = installed
 		}
-		m.state = stateBrowserSelect
+		m.state = stateSoftwareSelect
 		return m, nil
 
 	case startInstallMsg:
@@ -124,21 +124,21 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-	case stateBrowserSelect:
-		browsers := domain.AllBrowsers()
+	case stateSoftwareSelect:
+		software := domain.AllSoftware()
 		switch msg.String() {
 		case "up", "k":
-			m.cursor = (m.cursor - 1 + len(browsers)) % len(browsers)
+			m.cursor = (m.cursor - 1 + len(software)) % len(software)
 		case "down", "j":
-			m.cursor = (m.cursor + 1) % len(browsers)
+			m.cursor = (m.cursor + 1) % len(software)
 		case " ":
-			id := browsers[m.cursor]
+			id := software[m.cursor]
 			m.checked[id] = !m.checked[id]
 			m.validationErr = ""
 		case "enter":
 			sel := m.getSelected()
 			if len(sel) == 0 {
-				m.validationErr = "Select at least one browser"
+				m.validationErr = "Select at least one item"
 				return m, nil
 			}
 			m.selected = sel
@@ -169,8 +169,8 @@ func (m Model) View() string {
 	switch m.state {
 	case stateWelcome:
 		return m.viewWelcome()
-	case stateBrowserSelect:
-		return m.viewBrowserSelect()
+	case stateSoftwareSelect:
+		return m.viewSoftwareSelect()
 	case stateProgress:
 		return m.viewProgress()
 	case stateSummary:
@@ -179,9 +179,9 @@ func (m Model) View() string {
 	return ""
 }
 
-func (m Model) getSelected() []domain.BrowserID {
-	var sel []domain.BrowserID
-	for _, id := range domain.AllBrowsers() {
+func (m Model) getSelected() []domain.SoftwareID {
+	var sel []domain.SoftwareID
+	for _, id := range domain.AllSoftware() {
 		if m.checked[id] {
 			sel = append(sel, id)
 		}
@@ -190,7 +190,7 @@ func (m Model) getSelected() []domain.BrowserID {
 }
 
 // detectOSCmd emits osInfo (already set by main.go) as an OSDetectedMsg to trigger
-// browser pre-install check and transition to browser select state.
+// software pre-install check and transition to software select state.
 func (m Model) detectOSCmd() tea.Cmd {
 	info := m.osInfo
 	return func() tea.Msg {
@@ -199,15 +199,15 @@ func (m Model) detectOSCmd() tea.Cmd {
 }
 
 type preInstalledCheckDoneMsg struct {
-	results map[domain.BrowserID]bool
+	results map[domain.SoftwareID]bool
 }
 
 type startInstallMsg struct{}
 
-func (m Model) checkInstalledBrowsers() tea.Cmd {
+func (m Model) checkInstalledSoftware() tea.Cmd {
 	installers := m.installers
 	return func() tea.Msg {
-		results := make(map[domain.BrowserID]bool)
+		results := make(map[domain.SoftwareID]bool)
 		for id, inst := range installers {
 			installed, _ := inst.IsInstalled()
 			results[id] = installed
@@ -220,7 +220,7 @@ func (m Model) runInstallations() tea.Cmd {
 	selected := m.selected
 	installers := m.installers
 	return func() tea.Msg {
-		uc := usecases.NewInstallBrowsersUseCase(installers, time.Sleep)
+		uc := usecases.NewInstallSoftwareUseCase(installers, time.Sleep)
 		results := uc.Execute(selected)
 		return AllInstallsDoneMsg{Results: results}
 	}
@@ -239,9 +239,9 @@ func (m Model) viewWelcome() string {
 	return out
 }
 
-func (m Model) viewBrowserSelect() string {
-	out := "\n  Select browsers to install:\n\n"
-	for i, id := range domain.AllBrowsers() {
+func (m Model) viewSoftwareSelect() string {
+	out := "\n  Select software to install:\n\n"
+	for i, id := range domain.AllSoftware() {
 		cursor := "  "
 		if i == m.cursor {
 			cursor = "> "
@@ -264,7 +264,7 @@ func (m Model) viewBrowserSelect() string {
 }
 
 func (m Model) viewProgress() string {
-	out := "\n  Installing browsers...\n\n"
+	out := "\n  Installing software...\n\n"
 	for i, id := range m.selected {
 		var status string
 		if i < len(m.results) {
@@ -292,13 +292,13 @@ func (m Model) viewSummary() string {
 	success, failed := 0, 0
 	for _, r := range m.results {
 		if r.Err != nil {
-			out += "  [✗] " + r.Browser.DisplayName() + " — Failed\n"
+			out += "  [✗] " + r.Software.DisplayName() + " — Failed\n"
 			failed++
 		} else if r.AlreadyInstalled {
-			out += "  [✓] " + r.Browser.DisplayName() + " — Already installed\n"
+			out += "  [✓] " + r.Software.DisplayName() + " — Already installed\n"
 			success++
 		} else {
-			out += "  [✓] " + r.Browser.DisplayName() + " — Installed\n"
+			out += "  [✓] " + r.Software.DisplayName() + " — Installed\n"
 			success++
 		}
 	}

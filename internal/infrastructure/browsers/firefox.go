@@ -23,10 +23,10 @@ func NewFirefoxInstaller(executor domain.Executor) *FirefoxInstaller {
 	return &FirefoxInstaller{executor: executor}
 }
 
-var _ domain.BrowserInstaller = (*FirefoxInstaller)(nil)
+var _ domain.SoftwareInstaller = (*FirefoxInstaller)(nil)
 
-// ID returns the BrowserID for Firefox.
-func (f *FirefoxInstaller) ID() domain.BrowserID { return domain.Firefox }
+// ID returns the SoftwareID for Firefox.
+func (f *FirefoxInstaller) ID() domain.SoftwareID { return domain.Firefox }
 
 // IsInstalled checks if firefox is already installed.
 func (f *FirefoxInstaller) IsInstalled() (bool, error) {
@@ -46,7 +46,7 @@ func (f *FirefoxInstaller) Install() error {
 	for _, step := range steps {
 		_, stderr, err := f.executor.Execute(step[0], step[1:]...)
 		if err != nil {
-			return wrapInstallError("firefox", step[0], step[1:], "", stderr, err)
+			return domain.WrapInstallError("firefox", step[0], step[1:], "", stderr, err)
 		}
 	}
 	return nil

@@ -1,16 +1,14 @@
 package browsers
 
 import (
-	"strings"
-
 	"github.com/so-install/internal/core/domain"
 )
 
 const (
 	braveGPGURL     = "https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg"
-	braveSourcesURL = "https://brave-browser-apt-release.s3.brave.com/brave-browser.sources"
 	braveGPGPath    = "/usr/share/keyrings/brave-browser-archive-keyring.gpg"
-	braveSourcePath = "/etc/apt/sources.list.d/brave-browser-release.sources"
+	braveSourcePath = "/etc/apt/sources.list.d/brave-browser-release.list"
+	braveSourceList = "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"
 )
 
 // BraveInstaller installs Brave browser from the official repository.
@@ -23,10 +21,10 @@ func NewBraveInstaller(executor domain.Executor) *BraveInstaller {
 	return &BraveInstaller{executor: executor}
 }
 
-var _ domain.BrowserInstaller = (*BraveInstaller)(nil)
+var _ domain.SoftwareInstaller = (*BraveInstaller)(nil)
 
-// ID returns the BrowserID for Brave.
-func (b *BraveInstaller) ID() domain.BrowserID { return domain.Brave }
+// ID returns the SoftwareID for Brave.
+func (b *BraveInstaller) ID() domain.SoftwareID { return domain.Brave }
 
 // IsInstalled checks if brave-browser is already installed.
 func (b *BraveInstaller) IsInstalled() (bool, error) {
@@ -37,31 +35,17 @@ func (b *BraveInstaller) IsInstalled() (bool, error) {
 // Install installs Brave from the official repository.
 func (b *BraveInstaller) Install() error {
 	steps := [][]string{
-		{"curl", "-fsSLo", braveGPGPath, braveGPGURL},
-		{"curl", "-fsSLo", braveSourcePath, braveSourcesURL},
+		{"mkdir", "-p", "/usr/share/keyrings"},
+		{"wget", "-qO", braveGPGPath, braveGPGURL},
+		{"sh", "-c", "echo '" + braveSourceList + "' | tee " + braveSourcePath},
 		{"apt", "update"},
 		{"apt", "install", "-y", "brave-browser"},
 	}
 	for _, step := range steps {
 		_, stderr, err := b.executor.Execute(step[0], step[1:]...)
 		if err != nil {
-			return wrapInstallError("brave-browser", step[0], step[1:], "", stderr, err)
+			return domain.WrapInstallError("brave-browser", step[0], step[1:], "", stderr, err)
 		}
 	}
 	return nil
-}
-
-// wrapInstallError wraps a shell error as InstallError or AptLockError.
-func wrapInstallError(browser, cmd string, args []string, stdout, stderr string, err error) error {
-	base := domain.InstallError{
-		Browser: browser,
-		Command: cmd,
-		Args:    args,
-		Stdout:  stdout,
-		Stderr:  stderr,
-	}
-	if strings.Contains(stderr, "Could not get lock") {
-		return domain.AptLockError{InstallError: base}
-	}
-	return base
 }

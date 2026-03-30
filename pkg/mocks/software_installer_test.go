@@ -7,9 +7,9 @@ import (
 	"github.com/so-install/internal/core/domain"
 )
 
-func TestMockBrowserInstaller_TracksCalls(t *testing.T) {
-	m := &MockBrowserInstaller{
-		BrowserID:         domain.Brave,
+func TestMockSoftwareInstaller_TracksCalls(t *testing.T) {
+	m := &MockSoftwareInstaller{
+		SoftwareID:        domain.Brave,
 		IsInstalledResult: true,
 	}
 
@@ -27,9 +27,9 @@ func TestMockBrowserInstaller_TracksCalls(t *testing.T) {
 	}
 }
 
-func TestMockBrowserInstaller_ReturnsError(t *testing.T) {
-	m := &MockBrowserInstaller{
-		BrowserID:  domain.Firefox,
+func TestMockSoftwareInstaller_ReturnsError(t *testing.T) {
+	m := &MockSoftwareInstaller{
+		SoftwareID: domain.Firefox,
 		InstallErr: errors.New("install failed"),
 	}
 	err := m.Install()

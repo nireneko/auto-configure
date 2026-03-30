@@ -8,6 +8,7 @@ import (
 	"github.com/so-install/internal/core/domain"
 	"github.com/so-install/internal/core/usecases"
 	"github.com/so-install/internal/infrastructure/browsers"
+	"github.com/so-install/internal/infrastructure/docker"
 	"github.com/so-install/internal/infrastructure/osrelease"
 	"github.com/so-install/internal/infrastructure/shell"
 	"github.com/so-install/internal/presentation/tui"
@@ -33,11 +34,12 @@ func main() {
 
 	// 3. Build concrete installers
 	executor := shell.NewShellExecutor()
-	installerMap := map[domain.BrowserID]domain.BrowserInstaller{
+	installerMap := map[domain.SoftwareID]domain.SoftwareInstaller{
 		domain.Brave:    browsers.NewBraveInstaller(executor),
 		domain.Firefox:  browsers.NewFirefoxInstaller(executor),
 		domain.Chrome:   browsers.NewChromeInstaller(executor),
 		domain.Chromium: browsers.NewChromiumInstaller(executor),
+		domain.Docker:   docker.NewDockerInstaller(executor, os.Getenv("SUDO_USER")),
 	}
 
 	// 4. Build TUI model and inject osInfo

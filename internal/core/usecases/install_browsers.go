@@ -9,23 +9,23 @@ import (
 
 const maxAptLockRetries = 3
 
-// InstallBrowsersUseCase orchestrates browser installations sequentially.
-type InstallBrowsersUseCase struct {
-	installers map[domain.BrowserID]domain.BrowserInstaller
+// InstallSoftwareUseCase orchestrates software installations sequentially.
+type InstallSoftwareUseCase struct {
+	installers map[domain.SoftwareID]domain.SoftwareInstaller
 	sleepFn    func(time.Duration)
 }
 
-// NewInstallBrowsersUseCase creates a new use case.
+// NewInstallSoftwareUseCase creates a new use case.
 // In production, pass time.Sleep as sleepFn.
-func NewInstallBrowsersUseCase(
-	installers map[domain.BrowserID]domain.BrowserInstaller,
+func NewInstallSoftwareUseCase(
+	installers map[domain.SoftwareID]domain.SoftwareInstaller,
 	sleepFn func(time.Duration),
-) *InstallBrowsersUseCase {
-	return &InstallBrowsersUseCase{installers: installers, sleepFn: sleepFn}
+) *InstallSoftwareUseCase {
+	return &InstallSoftwareUseCase{installers: installers, sleepFn: sleepFn}
 }
 
-// Execute installs the selected browsers sequentially and returns results.
-func (uc *InstallBrowsersUseCase) Execute(selected []domain.BrowserID) []domain.InstallResult {
+// Execute installs the selected software sequentially and returns results.
+func (uc *InstallSoftwareUseCase) Execute(selected []domain.SoftwareID) []domain.InstallResult {
 	results := make([]domain.InstallResult, 0, len(selected))
 	for _, id := range selected {
 		installer := uc.installers[id]
@@ -35,26 +35,26 @@ func (uc *InstallBrowsersUseCase) Execute(selected []domain.BrowserID) []domain.
 	return results
 }
 
-func (uc *InstallBrowsersUseCase) installOne(id domain.BrowserID, installer domain.BrowserInstaller) domain.InstallResult {
+func (uc *InstallSoftwareUseCase) installOne(id domain.SoftwareID, installer domain.SoftwareInstaller) domain.InstallResult {
 	installed, err := installer.IsInstalled()
 	if err == nil && installed {
-		return domain.InstallResult{Browser: id, AlreadyInstalled: true}
+		return domain.InstallResult{Software: id, AlreadyInstalled: true}
 	}
 
 	var lastErr error
 	for attempt := 0; attempt < maxAptLockRetries; attempt++ {
 		lastErr = installer.Install()
 		if lastErr == nil {
-			return domain.InstallResult{Browser: id}
+			return domain.InstallResult{Software: id}
 		}
 		if !isAptLockError(lastErr) {
-			return domain.InstallResult{Browser: id, Err: lastErr}
+			return domain.InstallResult{Software: id, Err: lastErr}
 		}
 		if attempt < maxAptLockRetries-1 {
 			uc.sleepFn(5 * time.Second)
 		}
 	}
-	return domain.InstallResult{Browser: id, Err: lastErr}
+	return domain.InstallResult{Software: id, Err: lastErr}
 }
 
 func isAptLockError(err error) bool {

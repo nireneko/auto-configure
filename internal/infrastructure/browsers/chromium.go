@@ -12,10 +12,10 @@ func NewChromiumInstaller(executor domain.Executor) *ChromiumInstaller {
 	return &ChromiumInstaller{executor: executor}
 }
 
-var _ domain.BrowserInstaller = (*ChromiumInstaller)(nil)
+var _ domain.SoftwareInstaller = (*ChromiumInstaller)(nil)
 
-// ID returns the BrowserID for Chromium.
-func (c *ChromiumInstaller) ID() domain.BrowserID { return domain.Chromium }
+// ID returns the SoftwareID for Chromium.
+func (c *ChromiumInstaller) ID() domain.SoftwareID { return domain.Chromium }
 
 // IsInstalled checks if chromium is already installed.
 func (c *ChromiumInstaller) IsInstalled() (bool, error) {
@@ -32,7 +32,7 @@ func (c *ChromiumInstaller) Install() error {
 	for _, step := range steps {
 		_, stderr, err := c.executor.Execute(step[0], step[1:]...)
 		if err != nil {
-			return wrapInstallError("chromium", step[0], step[1:], "", stderr, err)
+			return domain.WrapInstallError("chromium", step[0], step[1:], "", stderr, err)
 		}
 	}
 	return nil
