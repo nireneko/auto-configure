@@ -14,6 +14,7 @@ const (
 	Nvm      SoftwareID = "nvm"
 	Gemini   SoftwareID = "gemini"
 	ClaudeCode SoftwareID = "claude"
+	Flatpak  SoftwareID = "flatpak"
 )
 
 // InstallStep defines a group of software to be installed together.
@@ -56,12 +57,17 @@ func GetSteps() []InstallStep {
 			Software: []SoftwareID{Gemini, ClaudeCode},
 			Critical: false,
 		},
+		{
+			ID:       "flatpak",
+			Software: []SoftwareID{Flatpak},
+			Critical: false,
+		},
 	}
 }
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Flatpak}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -87,6 +93,8 @@ func (s SoftwareID) DisplayName() string {
 		return "Google Gemini CLI"
 	case ClaudeCode:
 		return "Claude Code (Anthropic)"
+	case Flatpak:
+		return "Flatpak"
 	default:
 		return string(s)
 	}

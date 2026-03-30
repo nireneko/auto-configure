@@ -6,6 +6,7 @@ import "github.com/so-install/internal/core/domain"
 type MockOSDetector struct {
 	ReturnID        string
 	ReturnVersionID string
+	ReturnDE        domain.DesktopEnvironment
 	ReturnErr       error
 }
 
@@ -15,5 +16,5 @@ func (m *MockOSDetector) Detect() (*domain.OSInfo, error) {
 	if m.ReturnErr != nil {
 		return nil, m.ReturnErr
 	}
-	return &domain.OSInfo{ID: m.ReturnID, VersionID: m.ReturnVersionID}, nil
+	return &domain.OSInfo{ID: m.ReturnID, VersionID: m.ReturnVersionID, DesktopEnvironment: m.ReturnDE}, nil
 }

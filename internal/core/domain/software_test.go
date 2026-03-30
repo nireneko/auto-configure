@@ -21,6 +21,7 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.Nvm, "NVM & NPM"},
 		{domain.Gemini, "Google Gemini CLI"},
 		{domain.ClaudeCode, "Claude Code (Anthropic)"},
+		{domain.Flatpak, "Flatpak"},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.id), func(t *testing.T) {
@@ -63,8 +64,8 @@ func TestAllSoftware(t *testing.T) {
 func TestGetSteps(t *testing.T) {
 	steps := domain.GetSteps()
 
-	if len(steps) != 6 {
-		t.Fatalf("Expected 6 steps, got %d", len(steps))
+	if len(steps) != 7 {
+		t.Fatalf("Expected 7 steps, got %d", len(steps))
 	}
 
 	// Step 1: Browsers (Not critical)
@@ -107,5 +108,10 @@ func TestGetSteps(t *testing.T) {
 	}
 	if len(steps[5].Software) != 2 {
 		t.Errorf("Step 6 should have 2 AI tools, got %d", len(steps[5].Software))
+	}
+
+	// Step 7: Flatpak (Not critical)
+	if steps[6].ID != "flatpak" {
+		t.Errorf("Step 7 ID = %s, want flatpak", steps[6].ID)
 	}
 }
