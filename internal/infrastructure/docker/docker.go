@@ -55,6 +55,7 @@ func (d *DockerInstaller) Install() error {
 		{"apt", "update"},
 		{"apt", "install", "-y", "docker-ce", "docker-ce-cli", "containerd.io", "docker-buildx-plugin", "docker-compose-plugin"},
 		{"systemctl", "enable", "docker"},
+		{"systemctl", "enable", "containerd"},
 		{"systemctl", "start", "docker"},
 	}
 	for _, step := range steps {

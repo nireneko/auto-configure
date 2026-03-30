@@ -58,16 +58,16 @@ func TestDockerInstaller_IsInstalled_False(t *testing.T) {
 
 func TestDockerInstaller_Install_HappyPath_WithSudoUser(t *testing.T) {
 	m := &mocks.MockExecutor{}
-	// 12 steps: step1(remove) + steps 2-11 + step12(usermod)
-	addSuccessResponses(m, 12)
+	// 13 steps: step1(remove) + steps 2-12 + step13(usermod)
+	addSuccessResponses(m, 13)
 
 	inst := docker.NewDockerInstaller(m, "alice")
 	err := inst.Install()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(m.Calls) != 12 {
-		t.Fatalf("expected 12 calls, got %d: %v", len(m.Calls), m.Calls)
+	if len(m.Calls) != 13 {
+		t.Fatalf("expected 13 calls, got %d: %v", len(m.Calls), m.Calls)
 	}
 
 	// Step 1: remove conflicting packages (apt remove)
@@ -90,24 +90,26 @@ func TestDockerInstaller_Install_HappyPath_WithSudoUser(t *testing.T) {
 	assertCall(t, m.Calls[8], "apt", "install", "-y", "docker-ce", "docker-ce-cli", "containerd.io", "docker-buildx-plugin", "docker-compose-plugin")
 	// Step 10: enable docker
 	assertCall(t, m.Calls[9], "systemctl", "enable", "docker")
-	// Step 11: start docker
-	assertCall(t, m.Calls[10], "systemctl", "start", "docker")
-	// Step 12: usermod (sudoUser = "alice")
-	assertCall(t, m.Calls[11], "usermod", "-aG", "docker", "alice")
+	// Step 11: enable containerd
+	assertCall(t, m.Calls[10], "systemctl", "enable", "containerd")
+	// Step 12: start docker
+	assertCall(t, m.Calls[11], "systemctl", "start", "docker")
+	// Step 13: usermod (sudoUser = "alice")
+	assertCall(t, m.Calls[12], "usermod", "-aG", "docker", "alice")
 }
 
 func TestDockerInstaller_Install_HappyPath_NoSudoUser(t *testing.T) {
 	m := &mocks.MockExecutor{}
-	// 11 steps: step1(remove) + steps 2-11, no usermod
-	addSuccessResponses(m, 11)
+	// 12 steps: step1(remove) + steps 2-12, no usermod
+	addSuccessResponses(m, 12)
 
 	inst := docker.NewDockerInstaller(m, "")
 	err := inst.Install()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(m.Calls) != 11 {
-		t.Fatalf("expected 11 calls (no usermod), got %d: %v", len(m.Calls), m.Calls)
+	if len(m.Calls) != 12 {
+		t.Fatalf("expected 12 calls (no usermod), got %d: %v", len(m.Calls), m.Calls)
 	}
 	// Verify usermod was NOT called
 	for _, call := range m.Calls {
@@ -121,16 +123,16 @@ func TestDockerInstaller_Install_Step1ErrorIgnored(t *testing.T) {
 	m := &mocks.MockExecutor{}
 	// Step 1 fails (packages not installed) — must be ignored
 	m.AddResponse("", "E: Unable to locate package docker.io", errors.New("exit 100"))
-	// Steps 2-11 succeed (no usermod — empty sudoUser)
-	addSuccessResponses(m, 10)
+	// Steps 2-12 succeed (no usermod — empty sudoUser)
+	addSuccessResponses(m, 11)
 
 	inst := docker.NewDockerInstaller(m, "")
 	err := inst.Install()
 	if err != nil {
 		t.Fatalf("step 1 error must be ignored, got: %v", err)
 	}
-	if len(m.Calls) != 11 {
-		t.Fatalf("expected 11 calls total, got %d", len(m.Calls))
+	if len(m.Calls) != 12 {
+		t.Fatalf("expected 12 calls total, got %d", len(m.Calls))
 	}
 }
 
