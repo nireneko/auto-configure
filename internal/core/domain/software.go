@@ -10,6 +10,7 @@ const (
 	Chromium SoftwareID = "chromium"
 	Docker   SoftwareID = "docker"
 	Ddev     SoftwareID = "ddev"
+	OpenVpn  SoftwareID = "openvpn"
 )
 
 // InstallStep defines a group of software to be installed together.
@@ -37,12 +38,17 @@ func GetSteps() []InstallStep {
 			Software: []SoftwareID{Ddev},
 			Critical: false,
 		},
+		{
+			ID:       "openvpn",
+			Software: []SoftwareID{OpenVpn},
+			Critical: false,
+		},
 	}
 }
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -60,6 +66,8 @@ func (s SoftwareID) DisplayName() string {
 		return "Docker CE"
 	case Ddev:
 		return "DDEV"
+	case OpenVpn:
+		return "OpenVPN"
 	default:
 		return string(s)
 	}

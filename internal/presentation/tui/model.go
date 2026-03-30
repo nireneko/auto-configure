@@ -272,7 +272,11 @@ func (m Model) viewWelcome() string {
 	out += "  1x-so-install\n"
 	out += "  Post-installation OS configurator\n"
 	if m.osInfo != nil {
-		out += "\n  OS: " + m.osInfo.ID + " " + m.osInfo.VersionID + "\n"
+		out += "\n  OS: " + m.osInfo.ID + " " + m.osInfo.VersionID
+		if m.osInfo.DesktopEnvironment != "" && m.osInfo.DesktopEnvironment != domain.Other {
+			out += " (" + string(m.osInfo.DesktopEnvironment) + ")"
+		}
+		out += "\n"
 	}
 	out += "\n  Press Enter to continue  •  q to quit\n"
 	return out

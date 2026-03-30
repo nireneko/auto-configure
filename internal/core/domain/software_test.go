@@ -59,8 +59,8 @@ func TestAllSoftware(t *testing.T) {
 func TestGetSteps(t *testing.T) {
 	steps := domain.GetSteps()
 
-	if len(steps) != 3 {
-		t.Fatalf("Expected 3 steps, got %d", len(steps))
+	if len(steps) != 4 {
+		t.Fatalf("Expected 4 steps, got %d", len(steps))
 	}
 
 	// Step 1: Browsers (Not critical)
@@ -82,8 +82,13 @@ func TestGetSteps(t *testing.T) {
 		t.Error("Step 2 (docker) SHOULD be critical")
 	}
 
-	// Step 3: DDEV (Not critical, but depends on Docker)
+	// Step 3: DDEV (Not critical)
 	if steps[2].ID != "ddev" {
 		t.Errorf("Step 3 ID = %s, want ddev", steps[2].ID)
+	}
+
+	// Step 4: OpenVPN (Not critical)
+	if steps[3].ID != "openvpn" {
+		t.Errorf("Step 4 ID = %s, want openvpn", steps[3].ID)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/so-install/internal/infrastructure/browsers"
 	"github.com/so-install/internal/infrastructure/ddev"
 	"github.com/so-install/internal/infrastructure/docker"
+	"github.com/so-install/internal/infrastructure/openvpn"
 	"github.com/so-install/internal/infrastructure/osrelease"
 	"github.com/so-install/internal/infrastructure/shell"
 	"github.com/so-install/internal/presentation/tui"
@@ -42,6 +43,7 @@ func main() {
 		domain.Chromium: browsers.NewChromiumInstaller(executor),
 		domain.Docker:   docker.NewDockerInstaller(executor, os.Getenv("SUDO_USER")),
 		domain.Ddev:     ddev.NewDdevInstaller(executor),
+		domain.OpenVpn:  openvpn.NewOpenVpnInstaller(executor, osInfo),
 	}
 	// 4. Build TUI model and inject osInfo
 	model := tui.NewModel(installerMap)
