@@ -55,3 +55,35 @@ func TestAllSoftware(t *testing.T) {
 		t.Errorf("ddev (index %d) should come after docker (index %d)", ddevIdx, dockerIdx)
 	}
 }
+
+func TestGetSteps(t *testing.T) {
+	steps := domain.GetSteps()
+
+	if len(steps) != 3 {
+		t.Fatalf("Expected 3 steps, got %d", len(steps))
+	}
+
+	// Step 1: Browsers (Not critical)
+	if steps[0].ID != "browsers" {
+		t.Errorf("Step 1 ID = %s, want browsers", steps[0].ID)
+	}
+	if steps[0].Critical {
+		t.Error("Step 1 (browsers) should NOT be critical")
+	}
+	if len(steps[0].Software) != 4 {
+		t.Errorf("Step 1 should have 4 browsers, got %d", len(steps[0].Software))
+	}
+
+	// Step 2: Docker (Critical)
+	if steps[1].ID != "docker" {
+		t.Errorf("Step 2 ID = %s, want docker", steps[1].ID)
+	}
+	if !steps[1].Critical {
+		t.Error("Step 2 (docker) SHOULD be critical")
+	}
+
+	// Step 3: DDEV (Not critical, but depends on Docker)
+	if steps[2].ID != "ddev" {
+		t.Errorf("Step 3 ID = %s, want ddev", steps[2].ID)
+	}
+}

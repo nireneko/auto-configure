@@ -24,13 +24,35 @@ func NewInstallSoftwareUseCase(
 	return &InstallSoftwareUseCase{installers: installers, sleepFn: sleepFn}
 }
 
-// Execute installs the selected software sequentially and returns results.
+// Execute installs the selected software sequentially following domain steps.
 func (uc *InstallSoftwareUseCase) Execute(selected []domain.SoftwareID) []domain.InstallResult {
-	results := make([]domain.InstallResult, 0, len(selected))
+	selectedMap := make(map[domain.SoftwareID]bool)
 	for _, id := range selected {
-		installer := uc.installers[id]
-		result := uc.installOne(id, installer)
-		results = append(results, result)
+		selectedMap[id] = true
+	}
+
+	results := make([]domain.InstallResult, 0, len(selected))
+	steps := domain.GetSteps()
+
+	for _, step := range steps {
+		stepFailed := false
+		for _, id := range step.Software {
+			if !selectedMap[id] {
+				continue
+			}
+
+			installer := uc.installers[id]
+			result := uc.installOne(id, installer)
+			results = append(results, result)
+
+			if result.Err != nil {
+				stepFailed = true
+			}
+		}
+
+		if stepFailed && step.Critical {
+			break
+		}
 	}
 	return results
 }

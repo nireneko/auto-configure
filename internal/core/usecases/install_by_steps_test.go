@@ -122,6 +122,35 @@ func TestInstallSoftware_OneFailureContinuesOthers(t *testing.T) {
 	}
 }
 
+func TestInstallSoftware_CriticalFailureBlocksNextStep(t *testing.T) {
+	dockerInst := &mocks.MockSoftwareInstaller{
+		SoftwareID: domain.Docker,
+		InstallErr: errors.New("docker failed"),
+	}
+	ddevInst := &mocks.MockSoftwareInstaller{
+		SoftwareID: domain.Ddev,
+	}
+
+	uc := usecases.NewInstallSoftwareUseCase(
+		map[domain.SoftwareID]domain.SoftwareInstaller{
+			domain.Docker: dockerInst,
+			domain.Ddev:   ddevInst,
+		},
+		noSleep,
+	)
+	results := uc.Execute([]domain.SoftwareID{domain.Docker, domain.Ddev})
+
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result (Docker), got %d. DDEV should have been skipped.", len(results))
+	}
+	if results[0].Software != domain.Docker || results[0].Err == nil {
+		t.Errorf("expected Docker failure, got %+v", results[0])
+	}
+	if ddevInst.InstallCalled {
+		t.Error("DDEV Install should NOT have been called after critical Docker failure")
+	}
+}
+
 // Test helpers
 
 type countingInstaller struct {

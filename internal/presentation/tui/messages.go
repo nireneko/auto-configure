@@ -12,6 +12,17 @@ type InstallProgressMsg struct {
 	Result domain.InstallResult
 }
 
+// StepStartedMsg is sent when a new installation phase starts.
+type StepStartedMsg struct {
+	Step domain.InstallStep
+}
+
+// StepFinishedMsg is sent when an installation phase completes.
+type StepFinishedMsg struct {
+	Step    domain.InstallStep
+	Results []domain.InstallResult
+}
+
 // AllInstallsDoneMsg is sent when all selected software has been processed.
 type AllInstallsDoneMsg struct {
 	Results []domain.InstallResult

@@ -10,32 +10,61 @@ const (
 	Chromium SoftwareID = "chromium"
 	Docker   SoftwareID = "docker"
 	Ddev     SoftwareID = "ddev"
-	)
+)
 
-	// AllSoftware returns all supported software in display order.
-	func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev}
+// InstallStep defines a group of software to be installed together.
+type InstallStep struct {
+	ID       string
+	Software []SoftwareID
+	Critical bool
+}
+
+// GetSteps returns the predefined installation phases.
+func GetSteps() []InstallStep {
+	return []InstallStep{
+		{
+			ID:       "browsers",
+			Software: []SoftwareID{Brave, Firefox, Chrome, Chromium},
+			Critical: false,
+		},
+		{
+			ID:       "docker",
+			Software: []SoftwareID{Docker},
+			Critical: true,
+		},
+		{
+			ID:       "ddev",
+			Software: []SoftwareID{Ddev},
+			Critical: false,
+		},
 	}
+}
 
-	// DisplayName returns a human-readable name for the software.
-	func (s SoftwareID) DisplayName() string {
+// AllSoftware returns all supported software in display order.
+func AllSoftware() []SoftwareID {
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev}
+}
+
+// DisplayName returns a human-readable name for the software.
+func (s SoftwareID) DisplayName() string {
 	switch s {
 	case Brave:
-	        return "Brave"
+		return "Brave"
 	case Firefox:
-	        return "Firefox"
+		return "Firefox"
 	case Chrome:
-	        return "Google Chrome"
+		return "Google Chrome"
 	case Chromium:
-	        return "Chromium"
+		return "Chromium"
 	case Docker:
-	        return "Docker CE"
+		return "Docker CE"
 	case Ddev:
-	        return "DDEV"
+		return "DDEV"
 	default:
-	        return string(s)
+		return string(s)
 	}
-	}
+}
+
 // SoftwareInstaller handles installation of specific software.
 type SoftwareInstaller interface {
 	Install() error

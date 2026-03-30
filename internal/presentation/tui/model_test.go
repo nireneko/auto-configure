@@ -126,17 +126,17 @@ func TestModel_SoftwareSelectLabelUpdated(t *testing.T) {
 }
 
 func TestModel_DockerAppearsInSoftwareList(t *testing.T) {
-        installers := makeInstallers(nil, nil)
-        m := tui.NewModel(installers)
-        m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
-        if cmd != nil {
-                msg := cmd()
-                m2, _ = m2.Update(msg)
-        }
-        view := m2.View()
-        if !strings.Contains(view, "Docker CE") {
-                t.Errorf("expected 'Docker CE' in software list, got: %s", view)
-        }
+	installers := makeInstallers(nil, nil)
+	m := tui.NewModel(installers)
+	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
+	if cmd != nil {
+		msg := cmd()
+		m2, _ = m2.Update(msg)
+	}
+	view := m2.View()
+	if !strings.Contains(view, "Docker CE") {
+		t.Errorf("expected 'Docker CE' in software list, got: %s", view)
+	}
 }
 
 func TestModel_DdevAppearsInSoftwareList(t *testing.T) {
@@ -150,5 +150,32 @@ func TestModel_DdevAppearsInSoftwareList(t *testing.T) {
 	view := m2.View()
 	if !strings.Contains(view, "DDEV") {
 		t.Errorf("expected 'DDEV' in software list, got: %s", view)
+	}
+}
+
+func TestModel_StepTransitions(t *testing.T) {
+	installers := makeInstallers(nil, nil)
+	m := tui.NewModel(installers)
+
+	// Start install
+	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
+	// skip to select
+	if cmd != nil {
+		m2, _ = m2.Update(cmd())
+	}
+
+	// Start installation step
+	steps := domain.GetSteps()
+	m3, cmd := m2.Update(tui.StepFinishedMsg{
+		Step:    steps[0],
+		Results: []domain.InstallResult{{Software: domain.Brave, Err: nil}},
+	})
+
+	model := m3.(tui.Model)
+	_ = model
+	// Check if moved to next step (index 1 is docker)
+	// (Note: it actually returns m, runCurrentStep() command)
+	if cmd == nil {
+		t.Fatal("expected command to run next step")
 	}
 }

@@ -36,12 +36,12 @@ func main() {
 	// 3. Build concrete installers
 	executor := shell.NewShellExecutor()
 	installerMap := map[domain.SoftwareID]domain.SoftwareInstaller{
-	        domain.Brave:    browsers.NewBraveInstaller(executor),
-	        domain.Firefox:  browsers.NewFirefoxInstaller(executor),
-	        domain.Chrome:   browsers.NewChromeInstaller(executor),
-	        domain.Chromium: browsers.NewChromiumInstaller(executor),
-	        domain.Docker:   docker.NewDockerInstaller(executor, os.Getenv("SUDO_USER")),
-	        domain.Ddev:     ddev.NewDdevInstaller(executor),
+		domain.Brave:    browsers.NewBraveInstaller(executor),
+		domain.Firefox:  browsers.NewFirefoxInstaller(executor),
+		domain.Chrome:   browsers.NewChromeInstaller(executor),
+		domain.Chromium: browsers.NewChromiumInstaller(executor),
+		domain.Docker:   docker.NewDockerInstaller(executor, os.Getenv("SUDO_USER")),
+		domain.Ddev:     ddev.NewDdevInstaller(executor),
 	}
 	// 4. Build TUI model and inject osInfo
 	model := tui.NewModel(installerMap)

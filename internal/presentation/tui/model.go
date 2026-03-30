@@ -30,12 +30,15 @@ type Model struct {
 	height     int
 
 	// sub-model state
-	cursor         int
-	checked        map[domain.SoftwareID]bool
-	preInstalled   map[domain.SoftwareID]bool
-	validationErr  string
-	currentInstall int
-	interrupted    bool
+	cursor        int
+	checked       map[domain.SoftwareID]bool
+	preInstalled  map[domain.SoftwareID]bool
+	validationErr string
+	interrupted   bool
+
+	// step-based state
+	steps       []domain.InstallStep
+	currentStep int
 }
 
 // NewModel creates the TUI model with the given installers.
@@ -91,13 +94,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case startInstallMsg:
 		m.state = stateProgress
-		m.currentInstall = 0
-		return m, m.runInstallations()
+		m.steps = domain.GetSteps()
+		m.currentStep = 0
+		return m, m.runCurrentStep()
 
-	case InstallProgressMsg:
-		m.results = append(m.results, msg.Result)
-		m.currentInstall++
-		return m, nil
+	case StepFinishedMsg:
+		m.results = append(m.results, msg.Results...)
+
+		// Check if we should stop due to critical failure
+		if msg.Step.Critical {
+			for _, r := range msg.Results {
+				if r.Err != nil {
+					return m, func() tea.Msg { return AllInstallsDoneMsg{Results: m.results} }
+				}
+			}
+		}
+
+		m.currentStep++
+		if m.currentStep >= len(m.steps) {
+			return m, func() tea.Msg { return AllInstallsDoneMsg{Results: m.results} }
+		}
+		return m, m.runCurrentStep()
 
 	case AllInstallsDoneMsg:
 		m.results = msg.Results
@@ -216,13 +233,33 @@ func (m Model) checkInstalledSoftware() tea.Cmd {
 	}
 }
 
-func (m Model) runInstallations() tea.Cmd {
-	selected := m.selected
+func (m Model) runCurrentStep() tea.Cmd {
+	step := m.steps[m.currentStep]
+
+	// Find which software in this step is actually selected
+	var stepSelected []domain.SoftwareID
+	selectedMap := make(map[domain.SoftwareID]bool)
+	for _, id := range m.selected {
+		selectedMap[id] = true
+	}
+	for _, id := range step.Software {
+		if selectedMap[id] {
+			stepSelected = append(stepSelected, id)
+		}
+	}
+
+	// If no software from this step is selected, skip to next step immediately
+	if len(stepSelected) == 0 {
+		return func() tea.Msg {
+			return StepFinishedMsg{Step: step, Results: nil}
+		}
+	}
+
 	installers := m.installers
 	return func() tea.Msg {
 		uc := usecases.NewInstallSoftwareUseCase(installers, time.Sleep)
-		results := uc.Execute(selected)
-		return AllInstallsDoneMsg{Results: results}
+		results := uc.Execute(stepSelected)
+		return StepFinishedMsg{Step: step, Results: results}
 	}
 }
 
@@ -264,11 +301,19 @@ func (m Model) viewSoftwareSelect() string {
 }
 
 func (m Model) viewProgress() string {
-	out := "\n  Installing software...\n\n"
-	for i, id := range m.selected {
+	currentStep := m.steps[m.currentStep]
+	out := "\n  Phase: " + currentStep.ID + "...\n\n"
+
+	// Create map for easy lookup of results
+	resultsMap := make(map[domain.SoftwareID]domain.InstallResult)
+	for _, r := range m.results {
+		resultsMap[r.Software] = r
+	}
+
+	for _, id := range m.selected {
 		var status string
-		if i < len(m.results) {
-			r := m.results[i]
+		r, done := resultsMap[id]
+		if done {
 			if r.Err != nil {
 				status = "  [✗] " + id.DisplayName() + " — Failed"
 			} else if r.AlreadyInstalled {
@@ -276,10 +321,20 @@ func (m Model) viewProgress() string {
 			} else {
 				status = "  [✓] " + id.DisplayName() + " — Installed"
 			}
-		} else if i == len(m.results) {
-			status = "  [~] " + id.DisplayName() + " — Installing..."
 		} else {
-			status = "  [ ] " + id.DisplayName()
+			// Check if it's currently installing (in the active step)
+			inCurrentStep := false
+			for _, sid := range currentStep.Software {
+				if sid == id {
+					inCurrentStep = true
+					break
+				}
+			}
+			if inCurrentStep {
+				status = "  [~] " + id.DisplayName() + " — Installing..."
+			} else {
+				status = "  [ ] " + id.DisplayName()
+			}
 		}
 		out += status + "\n"
 	}
@@ -289,8 +344,12 @@ func (m Model) viewProgress() string {
 
 func (m Model) viewSummary() string {
 	out := "\n  Installation complete!\n\n"
-	success, failed := 0, 0
+	success, failed, skipped := 0, 0, 0
+
+	// Track which ones were actually processed
+	processed := make(map[domain.SoftwareID]bool)
 	for _, r := range m.results {
+		processed[r.Software] = true
 		if r.Err != nil {
 			out += "  [✗] " + r.Software.DisplayName() + " — Failed\n"
 			failed++
@@ -302,8 +361,21 @@ func (m Model) viewSummary() string {
 			success++
 		}
 	}
+
+	// Any selected but not processed was skipped
+	for _, id := range m.selected {
+		if !processed[id] {
+			out += "  [ ] " + id.DisplayName() + " — Skipped (dependency failed)\n"
+			skipped++
+		}
+	}
+
 	out += "\n"
-	out += "  Installed: " + strconv.Itoa(success) + "  Failed: " + strconv.Itoa(failed) + "\n"
+	out += "  Installed: " + strconv.Itoa(success) + "  Failed: " + strconv.Itoa(failed)
+	if skipped > 0 {
+		out += "  Skipped: " + strconv.Itoa(skipped)
+	}
+	out += "\n"
 	out += "\n  Press Enter or q to exit\n"
 	return out
 }

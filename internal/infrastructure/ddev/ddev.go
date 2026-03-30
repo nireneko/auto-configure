@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	ddevGPGURL  = "https://pkg.ddev.com/apt/gpg.key"
-	ddevGPGPath = "/etc/apt/keyrings/ddev.gpg"
+	ddevGPGURL    = "https://pkg.ddev.com/apt/gpg.key"
+	ddevGPGPath   = "/etc/apt/keyrings/ddev.gpg"
 	ddevRepoEntry = `echo "deb [signed-by=/etc/apt/keyrings/ddev.gpg] https://pkg.ddev.com/apt/ * *" | sudo tee /etc/apt/sources.list.d/ddev.list >/dev/null`
 )
 

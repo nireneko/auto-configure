@@ -9,14 +9,14 @@ var (
 		MarginBottom(1)
 
 	Subtitle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#888888"))
+			Foreground(lipgloss.Color("#888888"))
 
 	Selected = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFD93D")).
-		Bold(true)
+			Foreground(lipgloss.Color("#FFD93D")).
+			Bold(true)
 
 	Unselected = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#CCCCCC"))
+			Foreground(lipgloss.Color("#CCCCCC"))
 
 	Success = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#6BCB77")).
