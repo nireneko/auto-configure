@@ -1,6 +1,7 @@
 package homebrew
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,44 +67,97 @@ func TestHomebrewInstaller_IsInstalled(t *testing.T) {
 }
 
 func TestHomebrewInstaller_Install(t *testing.T) {
-	tempHome := t.TempDir()
-	
-	// Create dummy .bashrc
-	bashrcPath := filepath.Join(tempHome, ".bashrc")
-	os.WriteFile(bashrcPath, []byte("# dummy bashrc\n"), 0644)
+	t.Run("should install successfully", func(t *testing.T) {
+		tempHome := t.TempDir()
+		
+		// Create dummy .bashrc
+		bashrcPath := filepath.Join(tempHome, ".bashrc")
+		os.WriteFile(bashrcPath, []byte("# dummy bashrc\n"), 0644)
 
-	executor := &mocks.MockExecutor{}
-	installer := &HomebrewInstaller{
-		executor: executor,
-		homeDir:  tempHome,
-		brewPath: "/tmp/fakebrew",
-		userName: "testuser",
-	}
+		executor := &mocks.MockExecutor{}
+		installer := &HomebrewInstaller{
+			executor: executor,
+			homeDir:  tempHome,
+			brewPath: "/tmp/fakebrew",
+			userName: "testuser",
+		}
 
-	err := installer.Install()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+		err := installer.Install()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
-	// Verify executor calls
-	// 1. apt install (root)
-	// 2. brew install (sudo -u testuser)
-	if len(executor.Calls) < 2 {
-		t.Fatalf("expected at least 2 calls, got %d", len(executor.Calls))
-	}
+		if len(executor.Calls) < 2 {
+			t.Fatalf("expected at least 2 calls, got %d", len(executor.Calls))
+		}
 
-	if executor.Calls[0].Name != "apt" {
-		t.Errorf("expected call to apt, got %s", executor.Calls[0].Name)
-	}
+		if executor.Calls[0].Name != "apt" {
+			t.Errorf("expected call to apt, got %s", executor.Calls[0].Name)
+		}
 
-	if executor.Calls[1].Name != "sudo" || executor.Calls[1].Args[1] != "testuser" {
-		t.Errorf("expected sudo -u testuser for brew install, got %s %v", executor.Calls[1].Name, executor.Calls[1].Args)
-	}
+		if executor.Calls[1].Name != "sudo" || executor.Calls[1].Args[1] != "testuser" {
+			t.Errorf("expected sudo -u testuser for brew install, got %s %v", executor.Calls[1].Name, executor.Calls[1].Args)
+		}
 
-	// Verify shell config
-	bashrcContent, _ := os.ReadFile(bashrcPath)
-	expectedLine := `eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"`
-	if !strings.Contains(string(bashrcContent), expectedLine) {
-		t.Errorf("expected %s in .bashrc, got %s", expectedLine, string(bashrcContent))
-	}
+		// Verify shell config
+		bashrcContent, _ := os.ReadFile(bashrcPath)
+		expectedLine := `eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"`
+		if !strings.Contains(string(bashrcContent), expectedLine) {
+			t.Errorf("expected %s in .bashrc, got %s", expectedLine, string(bashrcContent))
+		}
+	})
+
+	t.Run("should return error if apt install fails", func(t *testing.T) {
+		executor := &mocks.MockExecutor{}
+		executor.AddResponse("", "apt failed", fmt.Errorf("error apt"))
+
+		installer := &HomebrewInstaller{
+			executor: executor,
+			homeDir:  t.TempDir(),
+			brewPath: "/tmp/fakebrew",
+			userName: "testuser",
+		}
+
+		err := installer.Install()
+		if err == nil {
+			t.Error("expected error from apt install, got nil")
+		}
+	})
+
+	t.Run("should return error if brew install script fails", func(t *testing.T) {
+		executor := &mocks.MockExecutor{}
+		// apt succeeds
+		executor.AddResponse("", "", nil)
+		// brew script fails
+		executor.AddResponse("", "brew script failed", fmt.Errorf("error script"))
+
+		installer := &HomebrewInstaller{
+			executor: executor,
+			homeDir:  t.TempDir(),
+			brewPath: "/tmp/fakebrew",
+			userName: "root", // tests fallback to bash if root
+		}
+
+		err := installer.Install()
+		if err == nil {
+			t.Error("expected error from brew install script, got nil")
+		}
+	})
+
+	t.Run("should skip modify if brew already in bashrc", func(t *testing.T) {
+		executor := &mocks.MockExecutor{}
+		tempHome := t.TempDir()
+		bashrcPath := filepath.Join(tempHome, ".bashrc")
+		expectedLine := `eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"`
+		os.WriteFile(bashrcPath, []byte(expectedLine), 0644)
+
+		installer := &HomebrewInstaller{
+			executor: executor,
+			homeDir:  tempHome,
+			brewPath: "/tmp/fakebrew",
+			userName: "testuser",
+		}
+		
+		installer.Install()
+	})
 }

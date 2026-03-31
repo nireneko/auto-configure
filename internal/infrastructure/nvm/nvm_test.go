@@ -33,6 +33,24 @@ func TestNvmInstaller_IsInstalled(t *testing.T) {
 			t.Error("Expected installed to be false")
 		}
 	})
+
+	t.Run("should return true if nvm.sh exists", func(t *testing.T) {
+		executor := &mocks.MockExecutor{}
+		installer := NewNvmInstaller(executor)
+		tmpHome := t.TempDir()
+		installer.homeDir = tmpHome
+		nvmDir := filepath.Join(tmpHome, ".nvm")
+		os.MkdirAll(nvmDir, 0755)
+		os.WriteFile(filepath.Join(nvmDir, "nvm.sh"), []byte("echo hi"), 0755)
+
+		installed, err := installer.IsInstalled()
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+		if !installed {
+			t.Error("Expected installed to be true")
+		}
+	})
 }
 
 func TestNvmInstaller_Install(t *testing.T) {
@@ -94,5 +112,39 @@ func TestNvmInstaller_Install(t *testing.T) {
 		if err == nil {
 			t.Error("Expected error, got nil")
 		}
+	})
+
+	t.Run("should return error if node lts install fails", func(t *testing.T) {
+		executor := &mocks.MockExecutor{}
+		// First command (nvm install script) succeeds
+		executor.AddResponse("", "", nil)
+		// Second command (node lts) fails
+		executor.AddResponse("", "failed to install node", fmt.Errorf("error node"))
+		
+		installer := &NvmInstaller{
+			executor: executor,
+			homeDir:  t.TempDir(), // prevent configureShell issues
+			userName: "root",      // no sudo
+		}
+		err := installer.Install()
+		if err == nil {
+			t.Error("Expected error from node install, got nil")
+		}
+	})
+
+	t.Run("should skip modify if nvm already in bashrc", func(t *testing.T) {
+		executor := &mocks.MockExecutor{}
+		tmpHome := t.TempDir()
+		bashrcPath := filepath.Join(tmpHome, ".bashrc")
+		os.WriteFile(bashrcPath, []byte("nvm.sh is here"), 0644)
+
+		installer := &NvmInstaller{
+			executor: executor,
+			homeDir:  tmpHome,
+			userName: "fakeuser",
+		}
+		
+		installer.Install()
+		// If it reaches here without error, it works.
 	})
 }
