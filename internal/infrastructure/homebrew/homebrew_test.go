@@ -73,12 +73,31 @@ func TestHomebrewInstaller_Install(t *testing.T) {
 	os.WriteFile(bashrcPath, []byte("# dummy bashrc\n"), 0644)
 
 	executor := &mocks.MockExecutor{}
-	installer := NewHomebrewInstaller(executor)
-	installer.homeDir = tempHome
+	installer := &HomebrewInstaller{
+		executor: executor,
+		homeDir:  tempHome,
+		brewPath: "/tmp/fakebrew",
+		userName: "testuser",
+	}
 
 	err := installer.Install()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify executor calls
+	// 1. apt install (root)
+	// 2. brew install (sudo -u testuser)
+	if len(executor.Calls) < 2 {
+		t.Fatalf("expected at least 2 calls, got %d", len(executor.Calls))
+	}
+
+	if executor.Calls[0].Name != "apt" {
+		t.Errorf("expected call to apt, got %s", executor.Calls[0].Name)
+	}
+
+	if executor.Calls[1].Name != "sudo" || executor.Calls[1].Args[1] != "testuser" {
+		t.Errorf("expected sudo -u testuser for brew install, got %s %v", executor.Calls[1].Name, executor.Calls[1].Args)
 	}
 
 	// Verify shell config

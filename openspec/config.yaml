@@ -1,0 +1,48 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: Go 1.24.2, Bubbletea, Lipgloss.
+  Architecture: Clean Architecture (Foundation in internal/core, infrastructure in internal/infrastructure).
+  Testing: go test (stretchr/testify).
+  Style: gofmt, go vet.
+
+strict_tdd: true
+
+testing:
+  runner:
+    command: "make test"
+    framework: "go test"
+  layers:
+    unit: true
+    integration: false
+    e2e: false
+  coverage:
+    available: true
+    command: "go test -cover ./..."
+  quality:
+    linter: "go vet"
+    formatter: "gofmt"
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group tasks by phase (foundation, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow existing code patterns and conventions (mocks in pkg/mocks)
+    - Load relevant coding skills (go-testing)
+  verify:
+    - Run tests if test infrastructure exists
+    - Compare implementation against every spec scenario
+  archive:
+    - Warn before merging destructive deltas (large removals)

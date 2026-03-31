@@ -22,8 +22,14 @@ func TestNpmInstaller_ID(t *testing.T) {
 func TestNpmInstaller_IsInstalled(t *testing.T) {
 	t.Run("should return true if command succeeds", func(t *testing.T) {
 		executor := &mocks.MockExecutor{}
-		installer := NewNpmInstaller(executor, "test-pkg", "test-bin", "test")
-		installer.homeDir = "/nonexistent" // Force no nvm sourcing
+		installer := &NpmInstaller{
+			executor:    executor,
+			packageName: "test-pkg",
+			binaryName:  "test-bin",
+			softwareID:  "test",
+			homeDir:     "/nonexistent", // Force no nvm sourcing
+			userName:    "",             // No sudo -u
+		}
 
 		installed, err := installer.IsInstalled()
 		if err != nil {
@@ -33,16 +39,23 @@ func TestNpmInstaller_IsInstalled(t *testing.T) {
 			t.Error("Expected installed to be true")
 		}
 		
-		if executor.Calls[0].Name != "test-bin" {
-			t.Errorf("Expected call to test-bin, got %s", executor.Calls[0].Name)
+		// If no SUDO_USER, it uses bash -c "test-bin --version"
+		if executor.Calls[0].Name != "bash" || executor.Calls[0].Args[1] != "test-bin --version" {
+			t.Errorf("Expected call to bash -c 'test-bin --version', got %s %v", executor.Calls[0].Name, executor.Calls[0].Args)
 		}
 	})
 
 	t.Run("should return false if command fails", func(t *testing.T) {
 		executor := &mocks.MockExecutor{}
 		executor.AddResponse("", "not found", fmt.Errorf("error"))
-		installer := NewNpmInstaller(executor, "test-pkg", "test-bin", "test")
-		installer.homeDir = "/nonexistent"
+		installer := &NpmInstaller{
+			executor:    executor,
+			packageName: "test-pkg",
+			binaryName:  "test-bin",
+			softwareID:  "test",
+			homeDir:     "/nonexistent",
+			userName:    "",
+		}
 
 		installed, err := installer.IsInstalled()
 		if err != nil {
@@ -57,9 +70,15 @@ func TestNpmInstaller_IsInstalled(t *testing.T) {
 func TestNpmInstaller_Install(t *testing.T) {
 	t.Run("should execute npm install -g", func(t *testing.T) {
 		executor := &mocks.MockExecutor{}
-		installer := NewNpmInstaller(executor, "@org/pkg", "pkg-bin", "test")
-		installer.homeDir = "/nonexistent"
-
+		installer := &NpmInstaller{
+			executor:    executor,
+			packageName: "@org/pkg",
+			binaryName:  "pkg-bin",
+			softwareID:  "test",
+			homeDir:     "/nonexistent",
+			userName:    "",
+		}
+		
 		err := installer.Install()
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
@@ -70,14 +89,13 @@ func TestNpmInstaller_Install(t *testing.T) {
 		}
 
 		call := executor.Calls[0]
-		if call.Name != "npm" || call.Args[0] != "install" || call.Args[1] != "-g" || call.Args[2] != "@org/pkg" {
+		if call.Name != "bash" || call.Args[1] != "npm install -g @org/pkg" {
 			t.Errorf("Unexpected command: %s %v", call.Name, call.Args)
 		}
 	})
 
-	t.Run("should source nvm if nvm.sh exists", func(t *testing.T) {
+	t.Run("should source nvm and use sudo if nvm.sh exists and userName is provided", func(t *testing.T) {
 		executor := &mocks.MockExecutor{}
-		installer := NewNpmInstaller(executor, "test-pkg", "test-bin", "test")
 		
 		// Create a temporary nvm.sh to trigger the sourcing logic
 		tmpDir := t.TempDir()
@@ -86,7 +104,14 @@ func TestNpmInstaller_Install(t *testing.T) {
 		nvmScript := filepath.Join(nvmDir, "nvm.sh")
 		os.WriteFile(nvmScript, []byte("#!/bin/bash"), 0644)
 		
-		installer.homeDir = tmpDir
+		installer := &NpmInstaller{
+			executor:    executor,
+			packageName: "test-pkg",
+			binaryName:  "test-bin",
+			softwareID:  "test",
+			homeDir:     tmpDir,
+			userName:    "testuser",
+		}
 
 		err := installer.Install()
 		if err != nil {
@@ -98,12 +123,16 @@ func TestNpmInstaller_Install(t *testing.T) {
 		}
 
 		call := executor.Calls[0]
-		if call.Name != "bash" {
-			t.Errorf("Expected bash, got %s", call.Name)
+		if call.Name != "sudo" {
+			t.Errorf("Expected sudo, got %s", call.Name)
 		}
+		if call.Args[1] != "testuser" {
+			t.Errorf("Expected -u testuser, got -u %s", call.Args[1])
+		}
+		
 		expectedCmd := fmt.Sprintf("source %s && npm install -g test-pkg", nvmScript)
-		if call.Args[1] != expectedCmd {
-			t.Errorf("Expected command %q, got %q", expectedCmd, call.Args[1])
+		if call.Args[4] != expectedCmd {
+			t.Errorf("Expected command %q, got %q", expectedCmd, call.Args[4])
 		}
 	})
 }

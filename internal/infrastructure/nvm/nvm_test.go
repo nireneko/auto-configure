@@ -2,6 +2,9 @@ package nvm
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/so-install/internal/core/domain"
@@ -33,28 +36,52 @@ func TestNvmInstaller_IsInstalled(t *testing.T) {
 }
 
 func TestNvmInstaller_Install(t *testing.T) {
-	t.Run("should execute install commands", func(t *testing.T) {
+	t.Run("should execute install commands as actual user", func(t *testing.T) {
 		executor := &mocks.MockExecutor{}
-		installer := NewNvmInstaller(executor)
-		installer.homeDir = "/tmp/fakehome"
+		// Mock home dir and user
+		tmpHome := t.TempDir()
+		
+		// Create fake .bashrc to test configureShell
+		bashrcPath := filepath.Join(tmpHome, ".bashrc")
+		if err := os.WriteFile(bashrcPath, []byte("# existing content"), 0644); err != nil {
+			t.Fatalf("Failed to create fake .bashrc: %v", err)
+		}
+
+		installer := &NvmInstaller{
+			executor: executor,
+			homeDir:  tmpHome,
+			userName: "fakeuser",
+		}
 
 		err := installer.Install()
 		if err != nil {
 			t.Fatalf("Expected no error, got %v", err)
 		}
 		
+		// Expect 3 calls: 1. NVM install, 2. Node install (since configureShell is internal)
+		// Wait, configureShell doesn't call executor, it writes files.
 		if len(executor.Calls) != 2 {
-			t.Fatalf("Expected 2 calls, got %d", len(executor.Calls))
+			t.Fatalf("Expected 2 calls to executor, got %d", len(executor.Calls))
 		}
 
 		expectedInstallCmd := fmt.Sprintf("curl -o- %s | bash", nvmInstallURL)
-		if executor.Calls[0].Name != "bash" || executor.Calls[0].Args[1] != expectedInstallCmd {
-			t.Errorf("Expected command 'bash -c %s' not found", expectedInstallCmd)
+		if executor.Calls[0].Name != "sudo" || executor.Calls[0].Args[1] != "fakeuser" || executor.Calls[0].Args[4] != expectedInstallCmd {
+			t.Errorf("Expected command 'sudo -u fakeuser bash -c %s' not found, got %s %v", expectedInstallCmd, executor.Calls[0].Name, executor.Calls[0].Args)
 		}
 
-		expectedNodeCmd := "source /tmp/fakehome/.nvm/nvm.sh && nvm install --lts"
-		if executor.Calls[1].Name != "bash" || executor.Calls[1].Args[1] != expectedNodeCmd {
-			t.Errorf("Expected command 'bash -c %s' not found", expectedNodeCmd)
+		nvmScript := filepath.Join(tmpHome, ".nvm", "nvm.sh")
+		expectedNodeCmd := fmt.Sprintf("source %s && nvm install --lts", nvmScript)
+		if executor.Calls[1].Name != "sudo" || executor.Calls[1].Args[1] != "fakeuser" || executor.Calls[1].Args[4] != expectedNodeCmd {
+			t.Errorf("Expected command 'sudo -u fakeuser bash -c %s' not found, got %s %v", expectedNodeCmd, executor.Calls[1].Name, executor.Calls[1].Args)
+		}
+
+		// Verify .bashrc was modified
+		content, err := os.ReadFile(bashrcPath)
+		if err != nil {
+			t.Fatalf("Failed to read .bashrc: %v", err)
+		}
+		if !strings.Contains(string(content), "nvm.sh") {
+			t.Error("Expected .bashrc to contain nvm.sh loader")
 		}
 	})
 

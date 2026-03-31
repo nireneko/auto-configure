@@ -19,15 +19,16 @@ type HomebrewInstaller struct {
 	executor domain.Executor
 	homeDir  string
 	brewPath string
+	userName string
 }
 
 // NewHomebrewInstaller creates a new HomebrewInstaller.
 func NewHomebrewInstaller(executor domain.Executor) *HomebrewInstaller {
-	home, _ := os.UserHomeDir()
 	return &HomebrewInstaller{
 		executor: executor,
-		homeDir:  home,
+		homeDir:  domain.GetActualHome(),
 		brewPath: brewPath,
+		userName: domain.GetActualUser(),
 	}
 }
 
@@ -50,7 +51,7 @@ func (h *HomebrewInstaller) IsInstalled() (bool, error) {
 
 // Install installs Homebrew and its dependencies.
 func (h *HomebrewInstaller) Install() error {
-	// 1. Install system dependencies
+	// 1. Install system dependencies (must be root)
 	deps := []string{"build-essential", "procps", "curl", "file", "git"}
 	installDepsCmd := append([]string{"install", "-y"}, deps...)
 	_, stderr, err := h.executor.Execute("apt", installDepsCmd...)
@@ -58,11 +59,23 @@ func (h *HomebrewInstaller) Install() error {
 		return domain.WrapInstallError("homebrew", "apt", installDepsCmd, "", stderr, err)
 	}
 
-	// 2. Run official installation script (non-interactive)
+	// 2. Run official installation script (non-interactive) AS THE ACTUAL USER
+	// Homebrew installation script explicitly forbids running as root.
 	installCmd := fmt.Sprintf("/bin/bash -c \"$(curl -fsSL %s)\" \"\" --noninteractive", homebrewScriptURL)
-	_, stderr, err = h.executor.Execute("bash", "-c", installCmd)
+	
+	var name string
+	var args []string
+	if h.userName != "" && h.userName != "root" {
+		name = "sudo"
+		args = []string{"-u", h.userName, "bash", "-c", installCmd}
+	} else {
+		name = "bash"
+		args = []string{"-c", installCmd}
+	}
+
+	_, stderr, err = h.executor.Execute(name, args...)
 	if err != nil {
-		return domain.WrapInstallError("homebrew", "bash", []string{"-c", installCmd}, "", stderr, err)
+		return domain.WrapInstallError("homebrew", name, args, "", stderr, err)
 	}
 
 	// 3. Configure shell environment

@@ -16,17 +16,18 @@ type NpmInstaller struct {
 	binaryName  string
 	softwareID  domain.SoftwareID
 	homeDir     string
+	userName    string
 }
 
 // NewNpmInstaller creates a new NpmInstaller.
 func NewNpmInstaller(executor domain.Executor, packageName, binaryName string, id domain.SoftwareID) *NpmInstaller {
-	home, _ := os.UserHomeDir()
 	return &NpmInstaller{
 		executor:    executor,
 		packageName: packageName,
 		binaryName:  binaryName,
 		softwareID:  id,
-		homeDir:     home,
+		homeDir:     domain.GetActualHome(),
+		userName:    domain.GetActualUser(),
 	}
 }
 
@@ -37,14 +38,14 @@ func (n *NpmInstaller) ID() domain.SoftwareID { return n.softwareID }
 
 // IsInstalled checks if the binary exists by running it with --version.
 func (n *NpmInstaller) IsInstalled() (bool, error) {
-	name, args := n.getCommand(n.binaryName, "--version")
+	name, args := n.getCommand(n.userName, n.binaryName, "--version")
 	_, _, err := n.executor.Execute(name, args...)
 	return err == nil, nil
 }
 
 // Install installs the npm package globally.
 func (n *NpmInstaller) Install() error {
-	name, args := n.getCommand("npm", "install", "-g", n.packageName)
+	name, args := n.getCommand(n.userName, "npm", "install", "-g", n.packageName)
 	_, stderr, err := n.executor.Execute(name, args...)
 	if err != nil {
 		return domain.WrapInstallError(string(n.softwareID), name, args, "", stderr, err)
@@ -53,13 +54,21 @@ func (n *NpmInstaller) Install() error {
 }
 
 // getCommand returns the command and arguments, prepending nvm source if nvm is found.
-func (n *NpmInstaller) getCommand(args ...string) (string, []string) {
+// It also wraps the command with sudo -u if userName is provided and not root.
+func (n *NpmInstaller) getCommand(userName string, args ...string) (string, []string) {
 	nvmScript := filepath.Join(n.homeDir, ".nvm", "nvm.sh")
+	
+	var finalCmd string
 	if _, err := os.Stat(nvmScript); err == nil {
 		// Prepend source nvm.sh and join with &&
-		fullCmd := fmt.Sprintf("source %s && %s", nvmScript, strings.Join(args, " "))
-		return "bash", []string{"-c", fullCmd}
+		finalCmd = fmt.Sprintf("source %s && %s", nvmScript, strings.Join(args, " "))
+	} else {
+		finalCmd = strings.Join(args, " ")
 	}
-	// Fallback to direct command
-	return args[0], args[1:]
+
+	if userName != "" && userName != "root" {
+		return "sudo", []string{"-u", userName, "bash", "-c", finalCmd}
+	}
+	
+	return "bash", []string{"-c", finalCmd}
 }
