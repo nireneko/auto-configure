@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,6 +41,57 @@ func TestGitlabTokenConfigurator_Install(t *testing.T) {
 		npmrcContent, err := os.ReadFile(npmrcFile)
 		require.NoError(t, err)
 		assert.Contains(t, string(npmrcContent), "//gitlab.com/api/v4/packages/npm/:_authToken=my-secret-token")
+	})
+
+	t.Run("should chown files to actual user", func(t *testing.T) {
+		tempHome := t.TempDir()
+		executor := &mocks.MockExecutor{}
+		configurator := NewGitlabTokenConfigurator(executor)
+		configurator.SetHomeDir(tempHome)
+		configurator.SetToken("test-token")
+
+		type chownCall struct {
+			path     string
+			uid, gid int
+		}
+		var calls []chownCall
+		configurator.SetChownFn(func(path string, uid, gid int) error {
+			calls = append(calls, chownCall{path, uid, gid})
+			return nil
+		})
+		configurator.SetUIDFn(func() int { return 1000 })
+		configurator.SetGIDFn(func() int { return 1000 })
+
+		err := configurator.Install()
+		require.NoError(t, err)
+
+		require.Len(t, calls, 3)
+		assert.Equal(t, filepath.Join(tempHome, ".composer"), calls[0].path)
+		assert.Equal(t, filepath.Join(tempHome, ".composer", "auth.json"), calls[1].path)
+		assert.Equal(t, filepath.Join(tempHome, ".npmrc"), calls[2].path)
+		for _, c := range calls {
+			assert.Equal(t, 1000, c.uid)
+			assert.Equal(t, 1000, c.gid)
+		}
+	})
+
+	t.Run("should propagate chownFn error", func(t *testing.T) {
+		tempHome := t.TempDir()
+		executor := &mocks.MockExecutor{}
+		configurator := NewGitlabTokenConfigurator(executor)
+		configurator.SetHomeDir(tempHome)
+		configurator.SetToken("test-token")
+
+		sentinelErr := errors.New("chown failed")
+		configurator.SetChownFn(func(path string, uid, gid int) error {
+			return sentinelErr
+		})
+		configurator.SetUIDFn(func() int { return 1000 })
+		configurator.SetGIDFn(func() int { return 1000 })
+
+		err := configurator.Install()
+		require.Error(t, err)
+		assert.ErrorIs(t, err, sentinelErr)
 	})
 
 	t.Run("should update existing configurations", func(t *testing.T) {

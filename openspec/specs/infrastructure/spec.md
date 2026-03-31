@@ -69,3 +69,70 @@ The system MUST execute desktop configuration commands in the context of the act
 - GIVEN the application is running as root via sudo
 - WHEN a desktop configuration command is executed
 - THEN the command MUST be executed as the original user (found via `SUDO_USER`).
+
+### Requirement: Test Edge Cases for Infrastructure Components
+The system MUST include unit tests that cover edge cases y fallos de ejecución en `openvpn`, `nvm` y `homebrew`.
+
+#### Scenario: Fallo de ejecución del instalador de OpenVPN
+- GIVEN que el ejecutor del sistema está mockeado
+- WHEN el instalador de OpenVPN intenta descargar el script pero la red falla
+- THEN el instalador debe retornar un error explícito de red
+
+#### Scenario: Fallo de ejecución del instalador de NVM
+- GIVEN que el ejecutor del sistema está mockeado
+- WHEN el instalador de NVM intenta descargar el script de instalación
+- THEN si el comando `wget` falla, el instalador debe retornar el error correspondiente
+
+#### Scenario: Fallo en la verificación de Homebrew
+- GIVEN que Homebrew no está instalado
+- WHEN el instalador verifica si el comando `brew` existe
+- THEN si el comando no existe y la instalación falla, debe retornar error
+
+### Requirement: GitlabTokenConfigurator — Composer File Ownership
+
+The configurator MUST chown the `~/.composer/` directory and `~/.composer/auth.json` to the real user after creating/writing them.
+
+#### Scenario: Install under sudo — composer files chowned to real user
+
+- GIVEN `SUDO_UID=1000`, `SUDO_GID=1000`, and a `chownFn` spy injected
+- WHEN `Install()` is called with a valid token
+- THEN `chownFn` is called with `("~/.composer", 1000, 1000)`
+- AND `chownFn` is called with `("~/.composer/auth.json", 1000, 1000)`
+
+#### Scenario: Install without sudo — composer files chowned to process owner
+
+- GIVEN `SUDO_UID` and `SUDO_GID` are not set, and a `chownFn` spy injected
+- WHEN `Install()` is called with a valid token
+- THEN `chownFn` is called with the current process UID/GID for both composer paths
+
+### Requirement: GitlabTokenConfigurator — NPM File Ownership
+
+The configurator MUST chown `~/.npmrc` to the real user after writing it.
+
+#### Scenario: Install under sudo — .npmrc chowned to real user
+
+- GIVEN `SUDO_UID=1000`, `SUDO_GID=1000`, and a `chownFn` spy injected
+- WHEN `Install()` is called with a valid token
+- THEN `chownFn` is called with `("~/.npmrc", 1000, 1000)`
+
+#### Scenario: Install without sudo — .npmrc chowned to process owner
+
+- GIVEN `SUDO_UID` and `SUDO_GID` are not set, and a `chownFn` spy injected
+- WHEN `Install()` is called with a valid token
+- THEN `chownFn` is called with the current process UID/GID for `.npmrc`
+
+### Requirement: GitlabTokenConfigurator — chownFn Injection
+
+The configurator MUST accept an injectable `chownFn func(string, int, int) error` (defaulting to `os.Chown`) and injectable `uidFn`/`gidFn` functions. A `SetChownFn` setter MUST be provided for test injection.
+
+#### Scenario: Default behavior uses os.Chown
+
+- GIVEN a configurator created with `NewGitlabTokenConfigurator`
+- WHEN `Install()` succeeds
+- THEN the real `os.Chown` is invoked (no custom fn set)
+
+#### Scenario: chownFn failure is propagated
+
+- GIVEN a `chownFn` spy that returns an error
+- WHEN `Install()` is called
+- THEN `Install()` returns that error

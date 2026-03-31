@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"os"
 	"os/user"
 	"testing"
 
@@ -19,6 +20,40 @@ func TestGetActualUser(t *testing.T) {
 	if err == nil && u != nil {
 		assert.Equal(t, u.Username, domain.GetActualUser())
 	}
+}
+
+func TestGetActualUID(t *testing.T) {
+	t.Run("SUDO_UID set to valid integer returns that value", func(t *testing.T) {
+		t.Setenv("SUDO_UID", "1000")
+		assert.Equal(t, 1000, domain.GetActualUID())
+	})
+
+	t.Run("SUDO_UID not set returns os.Getuid()", func(t *testing.T) {
+		t.Setenv("SUDO_UID", "")
+		assert.Equal(t, os.Getuid(), domain.GetActualUID())
+	})
+
+	t.Run("SUDO_UID set to non-integer returns os.Getuid()", func(t *testing.T) {
+		t.Setenv("SUDO_UID", "abc")
+		assert.Equal(t, os.Getuid(), domain.GetActualUID())
+	})
+}
+
+func TestGetActualGID(t *testing.T) {
+	t.Run("SUDO_GID set to valid integer returns that value", func(t *testing.T) {
+		t.Setenv("SUDO_GID", "1000")
+		assert.Equal(t, 1000, domain.GetActualGID())
+	})
+
+	t.Run("SUDO_GID not set returns os.Getgid()", func(t *testing.T) {
+		t.Setenv("SUDO_GID", "")
+		assert.Equal(t, os.Getgid(), domain.GetActualGID())
+	})
+
+	t.Run("SUDO_GID set to non-integer returns os.Getgid()", func(t *testing.T) {
+		t.Setenv("SUDO_GID", "abc")
+		assert.Equal(t, os.Getgid(), domain.GetActualGID())
+	})
 }
 
 func TestGetActualHome(t *testing.T) {

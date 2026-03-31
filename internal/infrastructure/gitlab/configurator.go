@@ -15,6 +15,9 @@ type GitlabTokenConfigurator struct {
 	executor domain.Executor
 	token    string
 	homeDir  string
+	chownFn  func(string, int, int) error
+	uidFn    func() int
+	gidFn    func() int
 }
 
 // NewGitlabTokenConfigurator creates a new GitlabTokenConfigurator.
@@ -22,8 +25,20 @@ func NewGitlabTokenConfigurator(executor domain.Executor) *GitlabTokenConfigurat
 	return &GitlabTokenConfigurator{
 		executor: executor,
 		homeDir:  domain.GetActualHome(),
+		chownFn:  os.Chown,
+		uidFn:    domain.GetActualUID,
+		gidFn:    domain.GetActualGID,
 	}
 }
+
+// SetChownFn overrides the chown function (useful for testing).
+func (g *GitlabTokenConfigurator) SetChownFn(fn func(string, int, int) error) { g.chownFn = fn }
+
+// SetUIDFn overrides the UID resolver function (useful for testing).
+func (g *GitlabTokenConfigurator) SetUIDFn(fn func() int) { g.uidFn = fn }
+
+// SetGIDFn overrides the GID resolver function (useful for testing).
+func (g *GitlabTokenConfigurator) SetGIDFn(fn func() int) { g.gidFn = fn }
 
 var _ domain.SoftwareInstaller = (*GitlabTokenConfigurator)(nil)
 
@@ -73,6 +88,10 @@ func (g *GitlabTokenConfigurator) configureComposer() error {
 		return fmt.Errorf("failed to create composer directory: %w", err)
 	}
 
+	if err := g.chownFn(composerDir, g.uidFn(), g.gidFn()); err != nil {
+		return fmt.Errorf("failed to chown composer directory: %w", err)
+	}
+
 	data := make(map[string]interface{})
 	if _, err := os.Stat(authFile); err == nil {
 		content, err := os.ReadFile(authFile)
@@ -95,6 +114,10 @@ func (g *GitlabTokenConfigurator) configureComposer() error {
 
 	if err := os.WriteFile(authFile, newContent, 0600); err != nil {
 		return fmt.Errorf("failed to write composer auth.json: %w", err)
+	}
+
+	if err := g.chownFn(authFile, g.uidFn(), g.gidFn()); err != nil {
+		return fmt.Errorf("failed to chown composer auth.json: %w", err)
 	}
 
 	return nil
@@ -132,6 +155,10 @@ func (g *GitlabTokenConfigurator) configureNpm() error {
 
 	if err := os.WriteFile(npmrcFile, []byte(newContent), 0600); err != nil {
 		return fmt.Errorf("failed to write .npmrc: %w", err)
+	}
+
+	if err := g.chownFn(npmrcFile, g.uidFn(), g.gidFn()); err != nil {
+		return fmt.Errorf("failed to chown .npmrc: %w", err)
 	}
 
 	return nil

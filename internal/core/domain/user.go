@@ -3,7 +3,28 @@ package domain
 import (
 	"os"
 	"os/user"
+	"strconv"
 )
+
+// GetActualUID returns the real user's UID even when running under sudo.
+func GetActualUID() int {
+	if s := os.Getenv("SUDO_UID"); s != "" {
+		if uid, err := strconv.Atoi(s); err == nil {
+			return uid
+		}
+	}
+	return os.Getuid()
+}
+
+// GetActualGID returns the real user's GID even when running under sudo.
+func GetActualGID() int {
+	if s := os.Getenv("SUDO_GID"); s != "" {
+		if gid, err := strconv.Atoi(s); err == nil {
+			return gid
+		}
+	}
+	return os.Getgid()
+}
 
 // GetActualUser returns the real user's name even when running under sudo.
 func GetActualUser() string {

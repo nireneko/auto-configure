@@ -45,3 +45,47 @@ The system SHALL provide a way to configure the screen lock and idle timeout for
 - GIVEN a list of all supported software
 - WHEN the user views the available software
 - THEN "Screen Lock Configuration" MUST be included in the list.
+
+### Requirement: GetActualUID
+
+The system MUST expose `GetActualUID() int` in `domain/user.go`. It MUST return the integer value of `SUDO_UID` when that env var is set and parseable; otherwise it MUST return `os.Getuid()`.
+
+#### Scenario: SUDO_UID is set to a valid integer
+
+- GIVEN `SUDO_UID` env var is set to `"1000"`
+- WHEN `GetActualUID()` is called
+- THEN it returns `1000`
+
+#### Scenario: SUDO_UID is not set
+
+- GIVEN `SUDO_UID` env var is empty or absent
+- WHEN `GetActualUID()` is called
+- THEN it returns the current process UID (`os.Getuid()`)
+
+#### Scenario: SUDO_UID is set to a non-integer value
+
+- GIVEN `SUDO_UID` env var is set to `"abc"`
+- WHEN `GetActualUID()` is called
+- THEN it returns the current process UID (parse fallback)
+
+### Requirement: GetActualGID
+
+The system MUST expose `GetActualGID() int` in `domain/user.go`. It MUST return the integer value of `SUDO_GID` when set and parseable; otherwise it MUST return `os.Getgid()`.
+
+#### Scenario: SUDO_GID is set to a valid integer
+
+- GIVEN `SUDO_GID` env var is set to `"1000"`
+- WHEN `GetActualGID()` is called
+- THEN it returns `1000`
+
+#### Scenario: SUDO_GID is not set
+
+- GIVEN `SUDO_GID` env var is empty or absent
+- WHEN `GetActualGID()` is called
+- THEN it returns the current process GID (`os.Getgid()`)
+
+#### Scenario: SUDO_GID is set to a non-integer value
+
+- GIVEN `SUDO_GID` env var is set to `"abc"`
+- WHEN `GetActualGID()` is called
+- THEN it returns the current process GID (parse fallback)
