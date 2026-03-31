@@ -18,6 +18,7 @@ import (
 	"github.com/so-install/internal/infrastructure/osrelease"
 	"github.com/so-install/internal/infrastructure/shell"
 	"github.com/so-install/internal/infrastructure/apt"
+	"github.com/so-install/internal/infrastructure/gitlab"
 	"github.com/so-install/internal/presentation/tui"
 )
 
@@ -58,6 +59,7 @@ func main() {
 		domain.Flatpak:  flatpak.NewFlatpakInstaller(executor, detector),
 		domain.Bitwarden: flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 		domain.Homebrew:  homebrew.NewHomebrewInstaller(executor),
+		domain.GitlabTokenConfig: gitlab.NewGitlabTokenConfigurator(executor),
 	}
 	// 4. Build TUI model and inject osInfo
 	model := tui.NewModel(installerMap)

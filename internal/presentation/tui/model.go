@@ -2,6 +2,7 @@ package tui
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,6 +15,7 @@ type appState int
 const (
 	stateWelcome appState = iota
 	stateSoftwareSelect
+	stateTokenInput
 	stateProgress
 	stateSummary
 )
@@ -35,6 +37,7 @@ type Model struct {
 	preInstalled  map[domain.SoftwareID]bool
 	validationErr string
 	interrupted   bool
+	gitlabToken   string
 
 	// step-based state
 	steps       []domain.InstallStep
@@ -56,6 +59,11 @@ func NewModel(installers map[domain.SoftwareID]domain.SoftwareInstaller) Model {
 // SetOSInfo sets the OS information on the model (called from main before TUI launch).
 func (m *Model) SetOSInfo(info *domain.OSInfo) {
 	m.osInfo = info
+}
+
+// SetCursor sets the cursor position (for testing).
+func (m *Model) SetCursor(idx int) {
+	m.cursor = idx
 }
 
 // ExitCode returns the process exit code (0 = success, 1 = failure).
@@ -96,6 +104,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = stateProgress
 		m.steps = domain.GetSteps()
 		m.currentStep = 0
+
+		// Inject token into Gitlab configurator if it exists
+		if inst, ok := m.installers[domain.GitlabTokenConfig]; ok {
+			if cfg, ok := inst.(interface{ SetToken(string) }); ok {
+				cfg.SetToken(m.gitlabToken)
+			}
+		}
+
 		return m, m.runCurrentStep()
 
 	case StepFinishedMsg:
@@ -162,9 +178,42 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			// Prepend mandatory system prep steps
 			m.selected = append([]domain.SoftwareID{domain.SystemUpdate, domain.BaseDeps}, sel...)
+
+			// If gitlab config is selected, go to token input state
+			if m.checked[domain.GitlabTokenConfig] {
+				m.state = stateTokenInput
+				m.gitlabToken = ""
+				return m, nil
+			}
+
 			return m, func() tea.Msg { return startInstallMsg{} }
 		case "q", "ctrl+c":
 			return m, tea.Quit
+		}
+
+	case stateTokenInput:
+		switch msg.String() {
+		case "enter":
+			if m.gitlabToken == "" {
+				m.validationErr = "Token cannot be empty"
+				return m, nil
+			}
+			m.validationErr = ""
+			return m, func() tea.Msg { return startInstallMsg{} }
+		case "backspace":
+			if len(m.gitlabToken) > 0 {
+				m.gitlabToken = m.gitlabToken[:len(m.gitlabToken)-1]
+			}
+		case "ctrl+c":
+			return m, tea.Quit
+		case "esc":
+			m.state = stateSoftwareSelect
+			return m, nil
+		default:
+			if len(msg.Runes) > 0 {
+				m.gitlabToken += string(msg.Runes)
+				m.validationErr = ""
+			}
 		}
 
 	case stateProgress:
@@ -191,6 +240,8 @@ func (m Model) View() string {
 		return m.viewWelcome()
 	case stateSoftwareSelect:
 		return m.viewSoftwareSelect()
+	case stateTokenInput:
+		return m.viewTokenInput()
 	case stateProgress:
 		return m.viewProgress()
 	case stateSummary:
@@ -304,6 +355,22 @@ func (m Model) viewSoftwareSelect() string {
 		out += "\n  ! " + m.validationErr + "\n"
 	}
 	out += "\n  Space: toggle  •  Enter: confirm  •  q: quit\n"
+	return out
+}
+
+func (m Model) viewTokenInput() string {
+	out := "\n  Gitlab Token Configuration:\n\n"
+	out += "  Please enter your Gitlab Personal Access Token (global):\n"
+	out += "  (Used for Composer and NPM private packages)\n\n"
+
+	masked := strings.Repeat("*", len(m.gitlabToken))
+	out += "  Token: " + masked + "_\n"
+
+	if m.validationErr != "" {
+		out += "\n  ! " + m.validationErr + "\n"
+	}
+
+	out += "\n  Enter: confirm  •  Esc: back  •  ctrl+c: quit\n"
 	return out
 }
 

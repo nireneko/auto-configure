@@ -237,3 +237,66 @@ func TestModel_NoPanicOnLastStepFinished(t *testing.T) {
 		t.Errorf("expected summary view after last step, got: %s", view)
 	}
 }
+
+func TestModel_GitlabTokenConfigTransition(t *testing.T) {
+	installers := makeInstallers(nil, nil)
+	m := tui.NewModel(installers)
+
+	// Reach stateSoftwareSelect
+	m_update, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
+	m = m_update.(tui.Model)
+	if cmd != nil {
+		m_update, _ = m.Update(cmd())
+		m = m_update.(tui.Model)
+	}
+
+	// Find the GitlabTokenConfig index in the list
+	software := domain.AllSoftware()
+	idx := -1
+	for i, id := range software {
+		if id == domain.GitlabTokenConfig {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		t.Fatal("GitlabTokenConfig not found in software list")
+	}
+
+	// Navigate to GitlabTokenConfig and select it
+	m.SetCursor(idx) // We'll need to add a SetCursor for testing if it's not exported
+	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+	m = m_update.(tui.Model)
+
+	// Press Enter to confirm selection
+	m_update, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = m_update.(tui.Model)
+
+	// Should NOT start installation yet, should go to stateTokenInput
+	if cmd != nil {
+		t.Fatal("Expected NO command yet, state should be token input")
+	}
+
+	view := m.View()
+	if !strings.Contains(view, "Gitlab Token Configuration") {
+		t.Errorf("Expected Gitlab Token Configuration view, got: %s", view)
+	}
+
+	// Test token input and masking
+	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
+	m = m_update.(tui.Model)
+	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("b")})
+	m = m_update.(tui.Model)
+
+	view = m.View()
+	if !strings.Contains(view, "Token: **_") {
+		t.Errorf("Expected masked token with 2 stars, got: %s", view)
+	}
+
+	// Confirm token
+	m_update, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("Expected startInstallMsg command after confirming token")
+	}
+}
