@@ -26,6 +26,7 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.Bitwarden, "Bitwarden"},
 		{domain.Homebrew, "Homebrew"},
 		{domain.GitlabTokenConfig, "Gitlab Token Configuration (Composer/NPM)"},
+		{domain.ScreenLockConfig, "Screen Lock Configuration"},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.id), func(t *testing.T) {
@@ -128,7 +129,7 @@ func TestGetSteps(t *testing.T) {
 	if steps[8].ID != "apps" {
 		t.Errorf("Step 9 ID = %s, want apps", steps[8].ID)
 	}
-	if len(steps[8].Software) != 3 {
-		t.Errorf("Step 9 should have 3 apps, got %d", len(steps[8].Software))
+	if len(steps[8].Software) != 4 {
+		t.Errorf("Step 9 should have 4 apps, got %d", len(steps[8].Software))
 	}
 }

@@ -21,6 +21,7 @@ const (
 	Bitwarden SoftwareID = "bitwarden"
 	Homebrew  SoftwareID = "homebrew"
 	GitlabTokenConfig SoftwareID = "gitlab-token-config"
+	ScreenLockConfig  SoftwareID = "screen-lock-config"
 )
 
 // InstallStep defines a group of software to be installed together.
@@ -75,7 +76,7 @@ func GetSteps() []InstallStep {
 		},
 		{
 			ID:       "apps",
-			Software: []SoftwareID{Bitwarden, Homebrew, GitlabTokenConfig},
+			Software: []SoftwareID{Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig},
 			Critical: false,
 		},
 	}
@@ -83,7 +84,7 @@ func GetSteps() []InstallStep {
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -123,6 +124,8 @@ func (s SoftwareID) DisplayName() string {
 		return "Homebrew"
 	case GitlabTokenConfig:
 		return "Gitlab Token Configuration (Composer/NPM)"
+	case ScreenLockConfig:
+		return "Screen Lock Configuration"
 	default:
 		return string(s)
 	}

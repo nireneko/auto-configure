@@ -9,6 +9,7 @@ import (
 	"github.com/so-install/internal/core/usecases"
 	"github.com/so-install/internal/infrastructure/browsers"
 	"github.com/so-install/internal/infrastructure/ddev"
+	"github.com/so-install/internal/infrastructure/desktop"
 	"github.com/so-install/internal/infrastructure/docker"
 	"github.com/so-install/internal/infrastructure/flatpak"
 	"github.com/so-install/internal/infrastructure/homebrew"
@@ -60,6 +61,7 @@ func main() {
 		domain.Bitwarden: flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 		domain.Homebrew:  homebrew.NewHomebrewInstaller(executor),
 		domain.GitlabTokenConfig: gitlab.NewGitlabTokenConfigurator(executor),
+		domain.ScreenLockConfig:  desktop.NewScreenLockInstaller(executor, detector),
 	}
 	// 4. Build TUI model and inject osInfo
 	model := tui.NewModel(installerMap)
