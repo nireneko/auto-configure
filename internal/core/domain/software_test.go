@@ -21,6 +21,7 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.Nvm, "NVM & NPM"},
 		{domain.Gemini, "Google Gemini CLI"},
 		{domain.ClaudeCode, "Claude Code (Anthropic)"},
+		{domain.Codex, "OpenAI Codex CLI"},
 		{domain.Flatpak, "Flatpak"},
 		{domain.Bitwarden, "Bitwarden"},
 	}
@@ -112,8 +113,8 @@ func TestGetSteps(t *testing.T) {
 	if steps[6].ID != "ai-cli" {
 		t.Errorf("Step 7 ID = %s, want ai-cli", steps[6].ID)
 	}
-	if len(steps[6].Software) != 2 {
-		t.Errorf("Step 7 should have 2 AI tools, got %d", len(steps[6].Software))
+	if len(steps[6].Software) != 3 {
+		t.Errorf("Step 7 should have 3 AI tools, got %d", len(steps[6].Software))
 	}
 
 	// Step 8: Flatpak (Not critical)

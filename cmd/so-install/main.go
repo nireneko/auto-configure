@@ -54,6 +54,7 @@ func main() {
 		domain.Nvm:      nvm.NewNvmInstaller(executor),
 		domain.Gemini:   npm.NewNpmInstaller(executor, "@google/gemini-cli", "gemini", domain.Gemini),
 		domain.ClaudeCode: npm.NewNpmInstaller(executor, "@anthropic-ai/claude-code", "claude", domain.ClaudeCode),
+		domain.Codex:    npm.NewNpmInstaller(executor, "@openai/codex", "codex", domain.Codex),
 		domain.Flatpak:  flatpak.NewFlatpakInstaller(executor, detector),
 		domain.Bitwarden: flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 		domain.Homebrew:  homebrew.NewHomebrewInstaller(executor),

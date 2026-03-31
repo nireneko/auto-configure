@@ -16,6 +16,7 @@ const (
 	Nvm      SoftwareID = "nvm"
 	Gemini   SoftwareID = "gemini"
 	ClaudeCode SoftwareID = "claude"
+	Codex      SoftwareID = "codex"
 	Flatpak  SoftwareID = "flatpak"
 	Bitwarden SoftwareID = "bitwarden"
 	Homebrew  SoftwareID = "homebrew"
@@ -63,7 +64,7 @@ func GetSteps() []InstallStep {
 		},
 		{
 			ID:       "ai-cli",
-			Software: []SoftwareID{Gemini, ClaudeCode},
+			Software: []SoftwareID{Gemini, ClaudeCode, Codex},
 			Critical: false,
 		},
 		{
@@ -81,7 +82,7 @@ func GetSteps() []InstallStep {
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Flatpak, Bitwarden, Homebrew}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Flatpak, Bitwarden, Homebrew}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -111,6 +112,8 @@ func (s SoftwareID) DisplayName() string {
 		return "Google Gemini CLI"
 	case ClaudeCode:
 		return "Claude Code (Anthropic)"
+	case Codex:
+		return "OpenAI Codex CLI"
 	case Flatpak:
 		return "Flatpak"
 	case Bitwarden:
