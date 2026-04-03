@@ -22,6 +22,8 @@ const (
 	Homebrew  SoftwareID = "homebrew"
 	GitlabTokenConfig SoftwareID = "gitlab-token-config"
 	ScreenLockConfig  SoftwareID = "screen-lock-config"
+	Ollama   SoftwareID = "ollama"
+	OpenCode SoftwareID = "opencode"
 )
 
 // InstallStep defines a group of software to be installed together.
@@ -66,7 +68,7 @@ func GetSteps() []InstallStep {
 		},
 		{
 			ID:       "ai-cli",
-			Software: []SoftwareID{Gemini, ClaudeCode, Codex},
+			Software: []SoftwareID{Gemini, ClaudeCode, Codex, Ollama, OpenCode},
 			Critical: false,
 		},
 		{
@@ -84,7 +86,7 @@ func GetSteps() []InstallStep {
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Ollama, OpenCode, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -126,6 +128,10 @@ func (s SoftwareID) DisplayName() string {
 		return "Gitlab Token Configuration (Composer/NPM)"
 	case ScreenLockConfig:
 		return "Screen Lock Configuration"
+	case Ollama:
+		return "Ollama"
+	case OpenCode:
+		return "OpenCode"
 	default:
 		return string(s)
 	}

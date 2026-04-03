@@ -17,6 +17,8 @@ import (
 	"github.com/so-install/internal/infrastructure/homebrew"
 	"github.com/so-install/internal/infrastructure/npm"
 	"github.com/so-install/internal/infrastructure/nvm"
+	"github.com/so-install/internal/infrastructure/ollama"
+	"github.com/so-install/internal/infrastructure/opencode"
 	"github.com/so-install/internal/infrastructure/openvpn"
 	"github.com/so-install/internal/infrastructure/osrelease"
 	"github.com/so-install/internal/infrastructure/shell"
@@ -66,6 +68,8 @@ func main() {
 		domain.Gemini:       npm.NewNpmInstaller(executor, "@google/gemini-cli", "gemini", domain.Gemini),
 		domain.ClaudeCode:   npm.NewNpmInstaller(executor, "@anthropic-ai/claude-code", "claude", domain.ClaudeCode),
 		domain.Codex:        npm.NewNpmInstaller(executor, "@openai/codex", "codex", domain.Codex),
+		domain.Ollama:       ollama.NewOllamaInstaller(executor),
+		domain.OpenCode:     opencode.NewOpenCodeInstaller(executor),
 		domain.Flatpak:      flatpak.NewFlatpakInstaller(executor, detector),
 		domain.Bitwarden:    flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 		domain.Homebrew:     homebrew.NewHomebrewInstaller(executor),
