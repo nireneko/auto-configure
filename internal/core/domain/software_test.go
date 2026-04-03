@@ -32,6 +32,7 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.ScreenLockConfig, "Screen Lock Configuration"},
 		{domain.Ollama, "Ollama"},
 		{domain.OpenCode, "OpenCode"},
+		{domain.GentleAI, "Gentle-AI"},
 		{domain.SoftwareID("unknown-software"), "unknown-software"}, // Default fallback
 	}
 
@@ -68,8 +69,35 @@ func TestAllSoftware(t *testing.T) {
 	assert.NotEmpty(t, all)
 }
 
-func TestAllSoftware_ContainsOllamaAndOpenCode(t *testing.T) {
+func TestAllSoftware_ContainsGentleAI(t *testing.T) {
 	all := domain.AllSoftware()
-	assert.Contains(t, all, domain.Ollama)
-	assert.Contains(t, all, domain.OpenCode)
+	assert.Contains(t, all, domain.GentleAI)
+}
+
+func TestGetSteps_GentleAI_IsAfterAiCli(t *testing.T) {
+	steps := domain.GetSteps()
+	var aiCliIdx, gentleAiIdx int = -1, -1
+	for i, step := range steps {
+		if step.ID == "ai-cli" {
+			aiCliIdx = i
+		}
+		if step.ID == "gentle-ai" {
+			gentleAiIdx = i
+		}
+	}
+	assert.NotEqual(t, -1, aiCliIdx, "ai-cli step not found")
+	assert.NotEqual(t, -1, gentleAiIdx, "gentle-ai step not found")
+	assert.Equal(t, aiCliIdx+1, gentleAiIdx, "gentle-ai step must be immediately after ai-cli")
+	
+	// Also check content
+	var gentleAiStep domain.InstallStep
+	for _, step := range steps {
+		if step.ID == "gentle-ai" {
+			gentleAiStep = step
+			break
+		}
+	}
+	assert.Contains(t, gentleAiStep.Software, domain.GentleAI)
+	assert.Len(t, gentleAiStep.Software, 1, "gentle-ai step must contain only one item")
+	assert.False(t, gentleAiStep.Critical, "gentle-ai step must not be critical")
 }

@@ -13,7 +13,9 @@ import (
 	"github.com/so-install/internal/infrastructure/desktop"
 	"github.com/so-install/internal/infrastructure/docker"
 	"github.com/so-install/internal/infrastructure/flatpak"
+	"github.com/so-install/internal/infrastructure/gentleai"
 	"github.com/so-install/internal/infrastructure/gitlab"
+
 	"github.com/so-install/internal/infrastructure/homebrew"
 	"github.com/so-install/internal/infrastructure/npm"
 	"github.com/so-install/internal/infrastructure/nvm"
@@ -70,7 +72,9 @@ func main() {
 		domain.Codex:        npm.NewNpmInstaller(executor, "@openai/codex", "codex", domain.Codex),
 		domain.Ollama:       ollama.NewOllamaInstaller(executor),
 		domain.OpenCode:     opencode.NewOpenCodeInstaller(executor),
+		domain.GentleAI:     gentleai.NewGentleAIInstaller(executor),
 		domain.Flatpak:      flatpak.NewFlatpakInstaller(executor, detector),
+
 		domain.Bitwarden:    flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 		domain.Homebrew:     homebrew.NewHomebrewInstaller(executor),
 		domain.GitlabTokenConfig: gitlab.NewGitlabTokenConfigurator(executor),

@@ -153,6 +153,20 @@ func TestModel_DdevAppearsInSoftwareList(t *testing.T) {
 	}
 }
 
+func TestModel_GentleAIAppearsInSoftwareList(t *testing.T) {
+	installers := makeInstallers(nil, nil)
+	m := tui.NewModel(installers)
+	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
+	if cmd != nil {
+		msg := cmd()
+		m2, _ = m2.Update(msg)
+	}
+	view := m2.View()
+	if !strings.Contains(view, "Gentle-AI") {
+		t.Errorf("expected 'Gentle-AI' in software list, got: %s", view)
+	}
+}
+
 func TestModel_StepTransitions(t *testing.T) {
 	installers := makeInstallers(nil, nil)
 	m := tui.NewModel(installers)
