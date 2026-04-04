@@ -24,9 +24,9 @@ import (
 	"github.com/so-install/internal/infrastructure/openvpn"
 	"github.com/so-install/internal/infrastructure/osrelease"
 	"github.com/so-install/internal/infrastructure/shell"
+	"github.com/so-install/internal/infrastructure/vscode"
 	"github.com/so-install/internal/presentation/tui"
-)
-
+	)
 var (
 	osExit     = os.Exit
 	osGetuid   = os.Getuid
@@ -73,8 +73,8 @@ func main() {
 		domain.Ollama:       ollama.NewOllamaInstaller(executor),
 		domain.OpenCode:     opencode.NewOpenCodeInstaller(executor),
 		domain.GentleAI:     gentleai.NewGentleAIInstaller(executor),
+		domain.VsCode:       vscode.NewVsCodeInstaller(executor),
 		domain.Flatpak:      flatpak.NewFlatpakInstaller(executor, detector),
-
 		domain.Bitwarden:    flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 		domain.Homebrew:     homebrew.NewHomebrewInstaller(executor),
 		domain.GitlabTokenConfig: gitlab.NewGitlabTokenConfigurator(executor),

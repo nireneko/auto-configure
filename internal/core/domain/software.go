@@ -25,6 +25,7 @@ const (
 	Ollama   SoftwareID = "ollama"
 	OpenCode SoftwareID = "opencode"
 	GentleAI SoftwareID = "gentle-ai"
+	VsCode   SoftwareID = "vscode"
 )
 
 // InstallStep defines a group of software to be installed together.
@@ -78,6 +79,11 @@ func GetSteps() []InstallStep {
 			Critical: false,
 		},
 		{
+			ID:       "ides",
+			Software: []SoftwareID{VsCode},
+			Critical: false,
+		},
+		{
 			ID:       "flatpak",
 			Software: []SoftwareID{Flatpak},
 			Critical: false,
@@ -92,7 +98,7 @@ func GetSteps() []InstallStep {
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Ollama, OpenCode, GentleAI, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Ollama, OpenCode, GentleAI, VsCode, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -140,6 +146,8 @@ func (s SoftwareID) DisplayName() string {
 		return "OpenCode"
 	case GentleAI:
 		return "Gentle-AI"
+	case VsCode:
+		return "Visual Studio Code"
 	default:
 		return string(s)
 	}

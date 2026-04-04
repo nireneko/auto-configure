@@ -33,6 +33,7 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.Ollama, "Ollama"},
 		{domain.OpenCode, "OpenCode"},
 		{domain.GentleAI, "Gentle-AI"},
+		{domain.VsCode, "Visual Studio Code"},
 		{domain.SoftwareID("unknown-software"), "unknown-software"}, // Default fallback
 	}
 
@@ -100,4 +101,32 @@ func TestGetSteps_GentleAI_IsAfterAiCli(t *testing.T) {
 	assert.Contains(t, gentleAiStep.Software, domain.GentleAI)
 	assert.Len(t, gentleAiStep.Software, 1, "gentle-ai step must contain only one item")
 	assert.False(t, gentleAiStep.Critical, "gentle-ai step must not be critical")
+}
+
+func TestGetSteps_Ides_IsAfterGentleAi(t *testing.T) {
+	steps := domain.GetSteps()
+	var gentleAiIdx, idesIdx int = -1, -1
+	for i, step := range steps {
+		if step.ID == "gentle-ai" {
+			gentleAiIdx = i
+		}
+		if step.ID == "ides" {
+			idesIdx = i
+		}
+	}
+	assert.NotEqual(t, -1, gentleAiIdx, "gentle-ai step not found")
+	assert.NotEqual(t, -1, idesIdx, "ides step not found")
+	assert.Equal(t, gentleAiIdx+1, idesIdx, "ides step must be immediately after gentle-ai")
+
+	// Also check content
+	var idesStep domain.InstallStep
+	for _, step := range steps {
+		if step.ID == "ides" {
+			idesStep = step
+			break
+		}
+	}
+	assert.Contains(t, idesStep.Software, domain.VsCode)
+	assert.Len(t, idesStep.Software, 1, "ides step must contain only one item")
+	assert.False(t, idesStep.Critical, "ides step must not be critical")
 }

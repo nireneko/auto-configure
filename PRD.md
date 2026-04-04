@@ -23,7 +23,12 @@ El sistema debe permitir la instalación de los siguientes navegadores desde sus
 - **Firefox (Official):** Utilizando el repositorio APT de Mozilla (preferido sobre la versión ESR de Debian para tener la última versión estable).
 - **Chromium:** Instalación directa desde los repositorios oficiales de Debian.
 
-### 2.4. Motor de Ejecución
+### 2.4. Módulo de IDEs
+El sistema debe permitir la instalación de entornos de desarrollo:
+
+- **VS Code:** Descarga del `.deb` oficial de Microsoft e instalación vía `apt`.
+
+### 2.5. Motor de Ejecución
 - Capacidad para ejecutar comandos de sistema de forma segura.
 - Manejo de logs de salida para cada comando.
 - Idempotencia: Si un paquete ya está instalado, el sistema debe informarlo y no fallar.
