@@ -111,33 +111,37 @@ The system MUST include a "gentle-ai" step in the installation sequence, positio
 - AND its index MUST be `ai-cli_index + 1`
 - AND it MUST contain only the `GentleAI` software ID
 - AND it MUST be marked as `Critical: false`
-# Delta for Domain: IDEs
+# Delta for Domain: IDEs (VS Code, Cursor & Antigravity)
 
 ## ADDED Requirements
 
-### Requirement: VS Code Software ID
-The system MUST include `vscode` as a valid `SoftwareID` value.
+### Requirement: IDE Software IDs (VS Code, Cursor, Antigravity)
+The system MUST include `vscode`, `cursor`, and `antigravity` as valid `SoftwareID` values.
 
-#### Scenario: VS Code ID registration
+#### Scenario: IDE IDs registration
 - GIVEN the `domain.SoftwareID` type
-- WHEN checking for the new ID
+- WHEN checking for the new IDs
 - THEN `VsCode` MUST be `"vscode"`
+- AND `Cursor` MUST be `"cursor"`
+- AND `Antigravity` MUST be `"antigravity"`
 
 ### Requirement: IDEs Install Step
-The system MUST include an "ides" step in the installation sequence, positioned after the "gentle-ai" step.
+The system MUST include an "ides" step in the installation sequence, positioned after the "gentle-ai" step, containing all supported IDEs.
 
-#### Scenario: IDEs step position
+#### Scenario: IDEs step position and content
 - GIVEN the `domain.GetSteps()` function
 - WHEN retrieving the installation steps
 - THEN a step with ID `"ides"` MUST be found
 - AND its index MUST be `gentle-ai_index + 1`
-- AND it MUST contain the `VsCode` software ID
+- AND it MUST contain `VsCode`, `Cursor`, and `Antigravity`
 - AND it MUST be marked as `Critical: false`
 
-### Requirement: VS Code Display Name
-The system MUST provide a human-readable display name for VS Code.
+### Requirement: IDE Display Names
+The system MUST provide human-readable display names for all supported IDEs.
 
-#### Scenario: VS Code display name
-- GIVEN the `domain.VsCode` software ID
+#### Scenario: IDE display names
+- GIVEN an IDE software ID
 - WHEN `DisplayName()` is called
-- THEN it MUST return `"Visual Studio Code"`
+- THEN it MUST return `"Visual Studio Code"` for `VsCode`
+- AND `"Cursor IDE"` for `Cursor`
+- AND `"Google Antigravity"` for `Antigravity`

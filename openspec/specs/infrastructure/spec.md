@@ -166,7 +166,7 @@ The installer MUST verify the installation by checking if the `gentle-ai` binary
 - WHEN `IsInstalled()` is called
 - THEN it MUST run `gentle-ai --version`
 - AND it MUST return `true` if the command succeeds.
-# Delta for Infrastructure: IDEs
+# Delta for Infrastructure: IDEs (VS Code, Cursor & Antigravity)
 
 ## ADDED Requirements
 
@@ -189,10 +189,43 @@ The installer MUST verify the installation by checking if the `code` binary exis
 - THEN it MUST run `which code`
 - AND it MUST return `true` if the command succeeds.
 
-### Requirement: VS Code Architecture
-The installer SHOULD target the `amd64` architecture, as it is the standard for the target systems of this project.
+### Requirement: Cursor Installer
+The system MUST provide an installer for the `cursor` ID that downloads and installs the official `.deb` package.
 
-#### Scenario: AMD64 Architecture Link
-- GIVEN the installer download logic
-- WHEN constructing the wget command
-- THEN it MUST use the link `https://go.microsoft.com/fwlink/?LinkID=760868` (which redirects to the 64-bit .deb)
+#### Scenario: Install Cursor
+- GIVEN a Debian-based system
+- WHEN the `CursorInstaller` is executed
+- THEN it MUST download the latest `.deb` from `https://downloader.cursor.sh/linux/debian/amd64`
+- AND it MUST save it to `/tmp/cursor.deb`
+- AND it MUST run `apt install -y /tmp/cursor.deb`
+
+### Requirement: Cursor Verification
+The installer MUST verify the installation by checking if the `cursor` binary exists in the system path.
+
+#### Scenario: Verify Cursor installation
+- GIVEN `cursor` is installed
+- WHEN `IsInstalled()` is called
+- THEN it MUST run `which cursor`
+- AND it MUST return `true` if the command succeeds.
+
+### Requirement: Antigravity Installer
+The system MUST provide an installer for the `antigravity` ID that sets up the official Google repository and installs the package.
+
+#### Scenario: Install Antigravity
+- GIVEN a Debian-based system
+- WHEN the `AntigravityInstaller` is executed
+- THEN it MUST ensure `/etc/apt/keyrings` exists
+- AND it MUST download the GPG key from `https://us-central1-apt.pkg.dev/doc/repo-signing-key.gpg` and save it to `/etc/apt/keyrings/antigravity-repo-key.gpg` (de-armored)
+- AND it MUST add the repository `deb [signed-by=/etc/apt/keyrings/antigravity-repo-key.gpg] https://us-central1-apt.pkg.dev/projects/antigravity-auto-updater-dev/ antigravity-debian main` to `/etc/apt/sources.list.d/antigravity.list`
+- AND it MUST run `apt update`
+- AND it MUST run `apt install -y antigravity`
+
+### Requirement: Antigravity Verification
+The installer MUST verify the installation by checking if the `agy` (CLI) binary exists.
+
+#### Scenario: Verify Antigravity installation
+- GIVEN `antigravity` is installed
+- WHEN `IsInstalled()` is called
+- THEN it MUST run `which agy`
+- AND it MUST return `true` if the command succeeds.
+
