@@ -34,6 +34,8 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.OpenCode, "OpenCode"},
 		{domain.GentleAI, "Gentle-AI"},
 		{domain.VsCode, "Visual Studio Code"},
+		{domain.Cursor, "Cursor IDE"},
+		{domain.Antigravity, "Google Antigravity"},
 		{domain.SoftwareID("unknown-software"), "unknown-software"}, // Default fallback
 	}
 
@@ -127,6 +129,8 @@ func TestGetSteps_Ides_IsAfterGentleAi(t *testing.T) {
 		}
 	}
 	assert.Contains(t, idesStep.Software, domain.VsCode)
-	assert.Len(t, idesStep.Software, 1, "ides step must contain only one item")
+	assert.Contains(t, idesStep.Software, domain.Cursor)
+	assert.Contains(t, idesStep.Software, domain.Antigravity)
+	assert.Len(t, idesStep.Software, 3, "ides step must contain three items")
 	assert.False(t, idesStep.Critical, "ides step must not be critical")
 }

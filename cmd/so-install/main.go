@@ -7,8 +7,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/so-install/internal/core/domain"
 	"github.com/so-install/internal/core/usecases"
+	"github.com/so-install/internal/infrastructure/antigravity"
 	"github.com/so-install/internal/infrastructure/apt"
 	"github.com/so-install/internal/infrastructure/browsers"
+	"github.com/so-install/internal/infrastructure/cursor"
 	"github.com/so-install/internal/infrastructure/ddev"
 	"github.com/so-install/internal/infrastructure/desktop"
 	"github.com/so-install/internal/infrastructure/docker"
@@ -74,6 +76,8 @@ func main() {
 		domain.OpenCode:     opencode.NewOpenCodeInstaller(executor),
 		domain.GentleAI:     gentleai.NewGentleAIInstaller(executor),
 		domain.VsCode:       vscode.NewVsCodeInstaller(executor),
+		domain.Cursor:       cursor.NewCursorInstaller(executor),
+		domain.Antigravity:  antigravity.NewAntigravityInstaller(executor),
 		domain.Flatpak:      flatpak.NewFlatpakInstaller(executor, detector),
 		domain.Bitwarden:    flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 		domain.Homebrew:     homebrew.NewHomebrewInstaller(executor),
