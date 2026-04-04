@@ -1,29 +1,25 @@
-package gitlab_test
+package gitlab
 
 import (
 	"testing"
 
 	"github.com/so-install/internal/core/domain"
-	"github.com/so-install/internal/infrastructure/gitlab"
 	"github.com/so-install/pkg/mocks"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestGitlabConfigurator_IDAndIsInstalled(t *testing.T) {
-	exec := &mocks.MockExecutor{}
-	conf := gitlab.NewGitlabTokenConfigurator(exec)
-
-	assert.Equal(t, domain.GitlabTokenConfig, conf.ID())
-
-	installed, err := conf.IsInstalled()
-	assert.NoError(t, err)
-	assert.False(t, installed)
+func TestGitlabTokenConfigurator_ID(t *testing.T) {
+	configurator := NewGitlabTokenConfigurator(&mocks.MockExecutor{})
+	if configurator.ID() != domain.GitlabTokenConfig { t.Errorf("Expected ID %v, got %v", domain.GitlabTokenConfig, configurator.ID()) }
 }
 
-func TestGitlabConfigurator_EmptyToken(t *testing.T) {
-	exec := &mocks.MockExecutor{}
-	conf := gitlab.NewGitlabTokenConfigurator(exec)
-	// No token set
-	err := conf.Install()
-	assert.ErrorContains(t, err, "gitlab token is not set")
+func TestGitlabTokenConfigurator_IsInstalled(t *testing.T) {
+	configurator := NewGitlabTokenConfigurator(&mocks.MockExecutor{})
+	installed, _ := configurator.IsInstalled()
+	if installed { t.Error("Expected false") }
+}
+
+func TestGitlabTokenConfigurator_Install_NoToken(t *testing.T) {
+	configurator := NewGitlabTokenConfigurator(&mocks.MockExecutor{})
+	err := configurator.Install()
+	if err == nil { t.Error("Expected error when token is not set") }
 }

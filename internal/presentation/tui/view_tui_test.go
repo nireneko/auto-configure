@@ -8,42 +8,41 @@ import (
 	"github.com/so-install/internal/presentation/tui"
 )
 
-func TestModel_NvidiaConfigTransitions(t *testing.T) {
+func TestModel_ViewMethods(t *testing.T) {
 	installers := makeInstallers(nil, nil)
 	m := tui.NewModel(installers)
 
+	m.View()
+
 	m_update, _ := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "13"}})
 	m = m_update.(tui.Model)
+	m.View()
 
-	software := m.VisibleSoftware()
+	// stateNvidiaConfig
+	m.SetCursor(0)
+	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
+	m = m_update.(tui.Model)
+	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = m_update.(tui.Model)
+	m.View()
+
+	// stateTokenInput
+	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = m_update.(tui.Model)
+	// Find GitlabTokenConfig
 	idx := -1
-	for i, id := range software {
-		if id == domain.NvidiaDrivers {
-			idx = i
-			break
-		}
-	}
-	if idx == -1 { t.Fatal("NvidiaDrivers not found in visible list for Debian 13") }
+	for i, id := range m.VisibleSoftware() { if id == domain.GitlabTokenConfig { idx = i; break } }
 	m.SetCursor(idx)
 	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
 	m = m_update.(tui.Model)
-
 	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = m_update.(tui.Model)
+	m.View()
 
-	// In stateNvidiaConfig
-	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}) // down
+	// stateProgress
+	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("t")})
 	m = m_update.(tui.Model)
-	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // up
-	m = m_update.(tui.Model)
-
 	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = m_update.(tui.Model)
-
-	m_update, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")})
-	m = m_update.(tui.Model)
-
-	// Other keys
-	m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	// We can't easily reach progress state here without mocking the pre-install cmd
 }

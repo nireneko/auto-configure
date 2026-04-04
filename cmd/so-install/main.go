@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -28,78 +29,76 @@ import (
 	"github.com/so-install/internal/infrastructure/shell"
 	"github.com/so-install/internal/infrastructure/vscode"
 	"github.com/so-install/internal/presentation/tui"
-	)
+)
+
 var (
-	osExit     = os.Exit
 	osGetuid   = os.Getuid
 	osGetenv   = os.Getenv
 	runProgram = func(p *tea.Program) (tea.Model, error) { return p.Run() }
+	newDetector = func() domain.OSDetector { return osrelease.NewDefaultDetector() }
 )
 
-func main() {
-	// 1. Validate privileges before anything else
+func Run(args []string, out io.Writer, errOut io.Writer) int {
 	privUC := usecases.NewCheckPrivilegesUseCase(osGetuid, osGetenv)
 	if err := privUC.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-		fmt.Fprintf(os.Stderr, "Please run with: sudo 1x-so-install\n")
-		osExit(1)
-		return
+		fmt.Fprintf(errOut, "Error: %s\n", err.Error())
+		fmt.Fprintf(errOut, "Please run with: sudo 1x-so-install\n")
+		return 1
 	}
 
-	// 2. Detect OS
-	detector := osrelease.NewDefaultDetector()
+	detector := newDetector()
 	osUC := usecases.NewDetectOSUseCase(detector)
 	osInfo, err := osUC.Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-		osExit(1)
-		return
+		fmt.Fprintf(errOut, "Error: %s\n", err.Error())
+		return 1
 	}
 
-	// 3. Build concrete installers
 	executor := shell.NewShellExecutor()
 	installerMap := map[domain.SoftwareID]domain.SoftwareInstaller{
-		domain.SystemUpdate: apt.NewAptUpdateInstaller(executor),
-		domain.BaseDeps:     apt.NewBaseDepsInstaller(executor),
-		domain.Brave:        browsers.NewBraveInstaller(executor),
-		domain.Firefox:      browsers.NewFirefoxInstaller(executor),
-		domain.Chrome:       browsers.NewChromeInstaller(executor),
-		domain.Chromium:     browsers.NewChromiumInstaller(executor),
-		domain.Docker:       docker.NewDockerInstaller(executor, osGetenv("SUDO_USER")),
-		domain.Ddev:         ddev.NewDdevInstaller(executor),
-		domain.OpenVpn:      openvpn.NewOpenVpnInstaller(executor, osInfo),
-		domain.Nvm:          nvm.NewNvmInstaller(executor),
-		domain.Gemini:       npm.NewNpmInstaller(executor, "@google/gemini-cli", "gemini", domain.Gemini),
-		domain.ClaudeCode:   npm.NewNpmInstaller(executor, "@anthropic-ai/claude-code", "claude", domain.ClaudeCode),
-		domain.Codex:        npm.NewNpmInstaller(executor, "@openai/codex", "codex", domain.Codex),
-		domain.Ollama:       ollama.NewOllamaInstaller(executor),
-		domain.OpenCode:     opencode.NewOpenCodeInstaller(executor),
-		domain.GentleAI:     gentleai.NewGentleAIInstaller(executor),
-		domain.VsCode:       vscode.NewVsCodeInstaller(executor),
-		domain.Cursor:       cursor.NewCursorInstaller(executor),
-		domain.Antigravity:  antigravity.NewAntigravityInstaller(executor),
-		domain.Flatpak:        flatpak.NewFlatpakInstaller(executor, detector),
-		domain.NvidiaDrivers:  nvidia.NewNvidiaInstaller(executor, osInfo),
-		domain.Bitwarden:    flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
-		domain.Homebrew:     homebrew.NewHomebrewInstaller(executor),
+		domain.SystemUpdate:      apt.NewAptUpdateInstaller(executor),
+		domain.BaseDeps:          apt.NewBaseDepsInstaller(executor),
+		domain.Brave:             browsers.NewBraveInstaller(executor),
+		domain.Firefox:           browsers.NewFirefoxInstaller(executor),
+		domain.Chrome:            browsers.NewChromeInstaller(executor),
+		domain.Chromium:          browsers.NewChromiumInstaller(executor),
+		domain.Docker:            docker.NewDockerInstaller(executor, osGetenv("SUDO_USER")),
+		domain.Ddev:              ddev.NewDdevInstaller(executor),
+		domain.OpenVpn:           openvpn.NewOpenVpnInstaller(executor, osInfo),
+		domain.Nvm:               nvm.NewNvmInstaller(executor),
+		domain.Gemini:            npm.NewNpmInstaller(executor, "@google/gemini-cli", "gemini", domain.Gemini),
+		domain.ClaudeCode:        npm.NewNpmInstaller(executor, "@anthropic-ai/claude-code", "claude", domain.ClaudeCode),
+		domain.Codex:             npm.NewNpmInstaller(executor, "@openai/codex", "codex", domain.Codex),
+		domain.Ollama:            ollama.NewOllamaInstaller(executor),
+		domain.OpenCode:          opencode.NewOpenCodeInstaller(executor),
+		domain.GentleAI:          gentleai.NewGentleAIInstaller(executor),
+		domain.VsCode:            vscode.NewVsCodeInstaller(executor),
+		domain.Cursor:            cursor.NewCursorInstaller(executor),
+		domain.Antigravity:       antigravity.NewAntigravityInstaller(executor),
+		domain.Flatpak:           flatpak.NewFlatpakInstaller(executor, detector),
+		domain.NvidiaDrivers:     nvidia.NewNvidiaInstaller(executor, osInfo),
+		domain.Bitwarden:         flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
+		domain.Homebrew:          homebrew.NewHomebrewInstaller(executor),
 		domain.GitlabTokenConfig: gitlab.NewGitlabTokenConfigurator(executor),
 		domain.ScreenLockConfig:  desktop.NewScreenLockInstaller(executor, detector),
 	}
-	
-	// 4. Build TUI model and inject osInfo
+
 	model := tui.NewModel(installerMap)
 	model.SetOSInfo(osInfo)
 
-	// 5. Run TUI
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	finalModel, err := runProgram(p)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "TUI error: %s\n", err.Error())
-		osExit(1)
-		return
+		fmt.Fprintf(errOut, "TUI error: %s\n", err.Error())
+		return 1
 	}
 
 	if m, ok := finalModel.(tui.Model); ok {
-		osExit(m.ExitCode())
+		return m.ExitCode()
 	}
+	return 0
+}
+
+func main() {
+	os.Exit(Run(os.Args, os.Stdout, os.Stderr))
 }

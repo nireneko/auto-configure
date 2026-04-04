@@ -37,7 +37,7 @@ func NewDefaultDetector() *Detector {
 			return os.Open("/etc/os-release")
 		},
 		os.Getenv,
-		detectDesktopEnvironment,
+		DetectDesktopEnvironment,
 	)
 }
 
@@ -86,12 +86,12 @@ func (d *Detector) detectDE() domain.DesktopEnvironment {
 	return d.deDetectorFn()
 }
 
-func detectDesktopEnvironment() domain.DesktopEnvironment {
+func DetectDesktopEnvironment() domain.DesktopEnvironment {
 	// 1. Check for running processes
-	if isProcessRunning("gnome-shell") {
+	if IsProcessRunning("gnome-shell") {
 		return domain.GNOME
 	}
-	if isProcessRunning("plasmashell") || isProcessRunning("kwin_x11") || isProcessRunning("kwin_wayland") {
+	if IsProcessRunning("plasmashell") || IsProcessRunning("kwin_x11") || IsProcessRunning("kwin_wayland") {
 		return domain.KDE
 	}
 
@@ -106,7 +106,7 @@ func detectDesktopEnvironment() domain.DesktopEnvironment {
 	return domain.Other
 }
 
-func isProcessRunning(name string) bool {
+func IsProcessRunning(name string) bool {
 	files, err := os.ReadDir("/proc")
 	if err != nil {
 		return false

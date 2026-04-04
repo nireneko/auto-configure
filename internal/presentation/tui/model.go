@@ -175,13 +175,13 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case stateWelcome:
 		switch msg.String() {
 		case "enter", " ":
-			return m, m.detectOSCmd()
+			return m, m.DetectOSCmd()
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
 
 	case stateSoftwareSelect:
-		software := m.visibleSoftware()
+		software := m.VisibleSoftware()
 		switch msg.String() {
 		case "up", "k":
 			m.cursor = (m.cursor - 1 + len(software)) % len(software)
@@ -201,7 +201,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.selected = append([]domain.SoftwareID{domain.SystemUpdate, domain.BaseDeps}, sel...)
 
 			// If Nvidia selected on Debian 13, collect driver preferences first
-			if m.checked[domain.NvidiaDrivers] && m.isDebian13() {
+			if m.checked[domain.NvidiaDrivers] && m.IsDebian13() {
 				m.state = stateNvidiaConfig
 				m.nvidiaConfigStep = 0
 				m.nvidiaDriverCursor = 0
@@ -237,7 +237,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.nvidiaDriverType = nvidiaOptions[m.nvidiaDriverCursor]
 				if m.nvidiaDriverType == domain.NvidiaFree {
 					m.nvidiaCUDA = false
-					return m, m.nextAfterNvidiaConfig()
+					return m, m.NextAfterNvidiaConfig()
 				}
 				m.nvidiaConfigStep = 1
 			case "esc":
@@ -249,10 +249,10 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "y", "Y":
 				m.nvidiaCUDA = true
-				return m, m.nextAfterNvidiaConfig()
+				return m, m.NextAfterNvidiaConfig()
 			case "n", "N", "enter":
 				m.nvidiaCUDA = false
-				return m, m.nextAfterNvidiaConfig()
+				return m, m.NextAfterNvidiaConfig()
 			case "esc":
 				m.nvidiaConfigStep = 0
 			case "q", "ctrl+c":
@@ -323,7 +323,7 @@ func (m Model) View() string {
 
 func (m Model) getSelected() []domain.SoftwareID {
 	var sel []domain.SoftwareID
-	for _, id := range m.visibleSoftware() {
+	for _, id := range m.VisibleSoftware() {
 		if m.checked[id] {
 			sel = append(sel, id)
 		}
@@ -331,11 +331,11 @@ func (m Model) getSelected() []domain.SoftwareID {
 	return sel
 }
 
-// visibleSoftware returns software available for the current OS.
+// VisibleSoftware returns software available for the current OS.
 // NvidiaDrivers is only shown on Debian 13.
-func (m Model) visibleSoftware() []domain.SoftwareID {
+func (m Model) VisibleSoftware() []domain.SoftwareID {
 	all := domain.AllSoftware()
-	if m.isDebian13() {
+	if m.IsDebian13() {
 		return all
 	}
 	result := make([]domain.SoftwareID, 0, len(all))
@@ -347,23 +347,23 @@ func (m Model) visibleSoftware() []domain.SoftwareID {
 	return result
 }
 
-// isDebian13 reports whether the current OS is Debian 13.
-func (m Model) isDebian13() bool {
+// IsDebian13 reports whether the current OS is Debian 13.
+func (m Model) IsDebian13() bool {
 	return m.osInfo != nil && m.osInfo.ID == "debian" && m.osInfo.VersionID == "13"
 }
 
-// nextAfterNvidiaConfig returns the cmd to fire after Nvidia config is complete.
+// NextAfterNvidiaConfig returns the cmd to fire after Nvidia config is complete.
 // State mutation (e.g. stateTokenInput) must be handled in the Update message handler.
-func (m Model) nextAfterNvidiaConfig() tea.Cmd {
+func (m Model) NextAfterNvidiaConfig() tea.Cmd {
 	if m.checked[domain.GitlabTokenConfig] {
 		return func() tea.Msg { return nvidiaConfigDoneMsg{} }
 	}
 	return func() tea.Msg { return startInstallMsg{} }
 }
 
-// detectOSCmd emits osInfo (already set by main.go) as an OSDetectedMsg to trigger
+// DetectOSCmd emits osInfo (already set by main.go) as an OSDetectedMsg to trigger
 // software pre-install check and transition to software select state.
-func (m Model) detectOSCmd() tea.Cmd {
+func (m Model) DetectOSCmd() tea.Cmd {
 	info := m.osInfo
 	return func() tea.Msg {
 		return OSDetectedMsg{Info: info}
@@ -437,7 +437,7 @@ func (m Model) viewWelcome() string {
 
 func (m Model) viewSoftwareSelect() string {
 	out := "\n  Select software to install:\n\n"
-	for i, id := range m.visibleSoftware() {
+	for i, id := range m.VisibleSoftware() {
 		cursor := "  "
 		if i == m.cursor {
 			cursor = "> "
