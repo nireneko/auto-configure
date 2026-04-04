@@ -2,6 +2,7 @@ package shell_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/so-install/internal/infrastructure/shell"
 )
@@ -37,5 +38,31 @@ func TestShellExecutor_CapturesStderr(t *testing.T) {
 	}
 	if stderr != "errtext" {
 		t.Errorf("expected 'errtext' in stderr, got %q", stderr)
+	}
+}
+
+func TestShellExecutor_Timeout(t *testing.T) {
+	ex := shell.NewShellExecutorWithTimeout(500 * time.Millisecond)
+	start := time.Now()
+	_, _, err := ex.Execute("sh", "-c", "sleep 999")
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("expected timeout error, got nil")
+	}
+	if elapsed > 3*time.Second {
+		t.Errorf("Execute took too long (%v), expected ~500ms", elapsed)
+	}
+}
+
+func TestShellExecutor_DaemonDoesNotHang(t *testing.T) {
+	// sh exits immediately after forking sleep to the background.
+	// sleep inherits the stdout/stderr pipes, which would block cmd.Run() forever
+	// without WaitDelay. With WaitDelay = 500ms, Execute returns after ~500ms.
+	ex := shell.NewShellExecutorWithTimeout(500 * time.Millisecond)
+	start := time.Now()
+	_, _, _ = ex.Execute("sh", "-c", "sleep 999 &")
+	elapsed := time.Since(start)
+	if elapsed > 3*time.Second {
+		t.Errorf("Execute blocked for %v — daemon kept the pipe open past WaitDelay", elapsed)
 	}
 }
