@@ -10,7 +10,7 @@ import (
 
 func TestModel_ViewMethods(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 
 	m.View()
 

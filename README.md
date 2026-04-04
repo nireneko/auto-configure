@@ -8,6 +8,7 @@ This project is a robust and deterministic CLI (Command Line Interface) tool des
 - **Environment Validation:** Automatic checking for root/sudo privileges and detection of Debian distribution and version.
 - **Modular Installation:** Multiple selection of packages and configurations.
 - **Idempotency:** Detects if a package is already installed to avoid unnecessary failures.
+- **Logging:** Detailed execution logs are stored in `so-install.log` for debugging and transparency.
 - **Robust Development:** Built following Clean Architecture principles and guided by TDD (Test Driven Development).
 
 ## What it Installs and Configures
@@ -79,3 +80,6 @@ To remove generated binaries and coverage files:
 ```bash
 make clean
 ```
+
+## Troubleshooting
+If the installation process appears to freeze or fails, check the `so-install.log` file in the current directory for detailed information about executed commands and errors.

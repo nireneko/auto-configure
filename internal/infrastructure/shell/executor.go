@@ -16,17 +16,24 @@ const defaultTimeout = 10 * time.Minute
 // ShellExecutor runs real shell commands using os/exec.
 type ShellExecutor struct {
 	timeout time.Duration
+	logger  domain.Logger
 }
 
-// NewShellExecutor creates a ShellExecutor with the default 10-minute timeout.
-func NewShellExecutor() *ShellExecutor {
-	return &ShellExecutor{timeout: defaultTimeout}
+// NewShellExecutor creates a ShellExecutor with the default 10-minute timeout and a logger.
+func NewShellExecutor(logger domain.Logger) *ShellExecutor {
+	if logger == nil {
+		logger = domain.NoopLogger{}
+	}
+	return &ShellExecutor{timeout: defaultTimeout, logger: logger}
 }
 
 // NewShellExecutorWithTimeout creates a ShellExecutor with a custom timeout.
 // Intended for use in tests.
-func NewShellExecutorWithTimeout(d time.Duration) *ShellExecutor {
-	return &ShellExecutor{timeout: d}
+func NewShellExecutorWithTimeout(d time.Duration, logger domain.Logger) *ShellExecutor {
+	if logger == nil {
+		logger = domain.NoopLogger{}
+	}
+	return &ShellExecutor{timeout: d, logger: logger}
 }
 
 var _ domain.Executor = (*ShellExecutor)(nil)
@@ -45,6 +52,8 @@ var _ domain.Executor = (*ShellExecutor)(nil)
 // Setpgid isolates the child in its own process group so that cmd.Cancel can send
 // SIGKILL to the whole group (including any daemonized grandchildren).
 func (e *ShellExecutor) Execute(name string, args ...string) (stdout, stderr string, err error) {
+	e.logger.Info("executing command", "command", name, "args", args)
+
 	ctx, cancel := context.WithTimeout(context.Background(), e.timeout)
 	defer cancel()
 
@@ -52,6 +61,7 @@ func (e *ShellExecutor) Execute(name string, args ...string) (stdout, stderr str
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.WaitDelay = e.timeout
 	cmd.Cancel = func() error {
+		e.logger.Error("command timeout, killing process group", "command", name)
 		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
 
@@ -59,5 +69,15 @@ func (e *ShellExecutor) Execute(name string, args ...string) (stdout, stderr str
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
 	err = cmd.Run()
-	return strings.TrimSpace(outBuf.String()), strings.TrimSpace(errBuf.String()), err
+
+	stdout = strings.TrimSpace(outBuf.String())
+	stderr = strings.TrimSpace(errBuf.String())
+
+	if err != nil {
+		e.logger.Error("command execution failed", "command", name, "err", err, "stderr", stderr)
+	} else {
+		e.logger.Debug("command execution successful", "command", name, "stdout", stdout)
+	}
+
+	return stdout, stderr, err
 }

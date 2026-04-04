@@ -17,7 +17,7 @@ func TestModel_MandatoryStepsPrepended(t *testing.T) {
 	installers[domain.SystemUpdate] = &mocks.MockSoftwareInstaller{SoftwareID: domain.SystemUpdate}
 	installers[domain.BaseDeps] = &mocks.MockSoftwareInstaller{SoftwareID: domain.BaseDeps}
 
-	m := NewModel(installers)
+	m := NewModel(installers, nil)
 
 	// 1. Move to SoftwareSelect state
 	m_update, _ := m.Update(OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})

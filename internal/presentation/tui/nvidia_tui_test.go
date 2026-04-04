@@ -10,7 +10,7 @@ import (
 
 func TestModel_NvidiaConfigTransitions(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 
 	m_update, _ := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "13"}})
 	m = m_update.(tui.Model)

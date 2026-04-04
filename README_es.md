@@ -8,6 +8,7 @@ Este proyecto es una herramienta de CLI (Command Line Interface) robusta y deter
 - **Validación de Entorno:** Comprobación automática de privilegios de root/sudo y detección de la distribución y versión de Debian.
 - **Instalación Modular:** Selección múltiple de paquetes y configuraciones.
 - **Idempotencia:** Detecta si un paquete ya está instalado para evitar fallos innecesarios.
+- **Logging:** Registro detallado de la ejecución en `so-install.log` para depuración y transparencia.
 - **Desarrollo Robusto:** Construido siguiendo principios de Clean Architecture y con una cobertura de tests guiada por TDD.
 
 ## Qué instala y configura
@@ -79,3 +80,6 @@ Para eliminar los binarios generados y archivos de cobertura:
 ```bash
 make clean
 ```
+
+## Solución de problemas
+Si el proceso de instalación parece congelarse o falla, consulta el archivo `so-install.log` en el directorio actual para obtener información detallada sobre los comandos ejecutados y los errores encontrados.

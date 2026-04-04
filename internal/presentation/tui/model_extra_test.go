@@ -9,7 +9,7 @@ import (
 )
 
 func TestModel_Coverage(t *testing.T) {
-	m := NewModel(map[domain.SoftwareID]domain.SoftwareInstaller{})
+	m := NewModel(map[domain.SoftwareID]domain.SoftwareInstaller{}, nil)
 
 	assert.Nil(t, m.Init())
 	assert.Equal(t, 0, m.ExitCode())

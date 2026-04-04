@@ -24,7 +24,7 @@ func makeInstallers(installed map[domain.SoftwareID]bool, installErrs map[domain
 }
 
 func TestModel_InitialStateIsWelcome(t *testing.T) {
-	m := tui.NewModel(makeInstallers(nil, nil))
+	m := tui.NewModel(makeInstallers(nil, nil), nil)
 	view := m.View()
 	if !strings.Contains(view, "1x-so-install") {
 		t.Errorf("welcome view missing app name, got: %s", view)
@@ -32,7 +32,7 @@ func TestModel_InitialStateIsWelcome(t *testing.T) {
 }
 
 func TestModel_EnterOnWelcomeTriggersDetection(t *testing.T) {
-	m := tui.NewModel(makeInstallers(nil, nil))
+	m := tui.NewModel(makeInstallers(nil, nil), nil)
 	m2, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if cmd == nil {
 		t.Log("cmd is nil, may be acceptable if osInfo not set")
@@ -42,7 +42,7 @@ func TestModel_EnterOnWelcomeTriggersDetection(t *testing.T) {
 
 func TestModel_SoftwareSelectShowsAllSoftware(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	m2, _ := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
 	view := m2.View()
 	_ = view
@@ -50,7 +50,7 @@ func TestModel_SoftwareSelectShowsAllSoftware(t *testing.T) {
 
 func TestModel_SelectionValidation(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	// Manually send OSDetected + preInstalled to reach select state
 	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
 	if cmd != nil {
@@ -69,7 +69,7 @@ func TestModel_SelectionValidation(t *testing.T) {
 
 func TestModel_ExitCode0WhenAllSucceed(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	m2, _ := m.Update(tui.AllInstallsDoneMsg{
 		Results: []domain.InstallResult{
 			{Software: domain.Brave, Err: nil},
@@ -84,7 +84,7 @@ func TestModel_ExitCode0WhenAllSucceed(t *testing.T) {
 
 func TestModel_ExitCode1WhenAnyFails(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	m2, _ := m.Update(tui.AllInstallsDoneMsg{
 		Results: []domain.InstallResult{
 			{Software: domain.Brave, Err: nil},
@@ -99,7 +99,7 @@ func TestModel_ExitCode1WhenAnyFails(t *testing.T) {
 
 func TestModel_QuitOnSummary(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	m2, _ := m.Update(tui.AllInstallsDoneMsg{Results: []domain.InstallResult{}})
 	_, cmd := m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	if cmd == nil {
@@ -113,7 +113,7 @@ func TestModel_QuitOnSummary(t *testing.T) {
 
 func TestModel_SoftwareSelectLabelUpdated(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
 	if cmd != nil {
 		msg := cmd()
@@ -127,7 +127,7 @@ func TestModel_SoftwareSelectLabelUpdated(t *testing.T) {
 
 func TestModel_DockerAppearsInSoftwareList(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
 	if cmd != nil {
 		msg := cmd()
@@ -141,7 +141,7 @@ func TestModel_DockerAppearsInSoftwareList(t *testing.T) {
 
 func TestModel_DdevAppearsInSoftwareList(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
 	if cmd != nil {
 		msg := cmd()
@@ -155,7 +155,7 @@ func TestModel_DdevAppearsInSoftwareList(t *testing.T) {
 
 func TestModel_GentleAIAppearsInSoftwareList(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
 	if cmd != nil {
 		msg := cmd()
@@ -169,7 +169,7 @@ func TestModel_GentleAIAppearsInSoftwareList(t *testing.T) {
 
 func TestModel_StepTransitions(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 
 	// Start install
 	m2, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
@@ -196,7 +196,7 @@ func TestModel_StepTransitions(t *testing.T) {
 
 func TestModel_NoPanicOnLastStepFinished(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	tm := tui.NewModel(installers)
+	tm := tui.NewModel(installers, nil)
 
 	// Reach stateProgress
 	m_update, cmd := tm.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})
@@ -254,7 +254,7 @@ func TestModel_NoPanicOnLastStepFinished(t *testing.T) {
 
 func TestModel_GitlabTokenConfigTransition(t *testing.T) {
 	installers := makeInstallers(nil, nil)
-	m := tui.NewModel(installers)
+	m := tui.NewModel(installers, nil)
 
 	// Reach stateSoftwareSelect
 	m_update, cmd := m.Update(tui.OSDetectedMsg{Info: &domain.OSInfo{ID: "debian", VersionID: "12"}})

@@ -31,6 +31,7 @@ type Model struct {
 	exitCode   int
 	width      int
 	height     int
+	logger     domain.Logger
 
 	// sub-model state
 	cursor        int
@@ -52,7 +53,10 @@ type Model struct {
 }
 
 // NewModel creates the TUI model with the given installers.
-func NewModel(installers map[domain.SoftwareID]domain.SoftwareInstaller) Model {
+func NewModel(installers map[domain.SoftwareID]domain.SoftwareInstaller, logger domain.Logger) Model {
+	if logger == nil {
+		logger = domain.NoopLogger{}
+	}
 	return Model{
 		state:        stateWelcome,
 		installers:   installers,
@@ -60,6 +64,7 @@ func NewModel(installers map[domain.SoftwareID]domain.SoftwareInstaller) Model {
 		preInstalled: make(map[domain.SoftwareID]bool),
 		width:        80,
 		height:       24,
+		logger:       logger,
 	}
 }
 
@@ -113,6 +118,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case startInstallMsg:
+		m.logger.Info("starting installation process", "selected", m.selected)
 		m.state = stateProgress
 		m.steps = domain.GetSteps()
 		m.currentStep = 0
@@ -137,11 +143,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case StepFinishedMsg:
 		m.results = append(m.results, msg.Results...)
+		m.logger.Info("step finished", "step", m.currentStep, "results", len(msg.Results))
 
 		// Check if we should stop due to critical failure
 		if msg.Step.Critical {
 			for _, r := range msg.Results {
 				if r.Err != nil {
+					m.logger.Error("critical step failed, stopping installation", "step", m.currentStep, "err", r.Err)
 					m.state = stateSummary
 					return m, func() tea.Msg { return AllInstallsDoneMsg{Results: m.results} }
 				}

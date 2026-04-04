@@ -83,18 +83,18 @@ func TestRun_Success(t *testing.T) {
 
 	oldNewDetector := newDetector
 	newDetector = func() domain.OSDetector {
-		return &mocks.MockOSDetector{
-			ReturnID: "debian",
-			ReturnVersionID: "12",
-		}
+	        return &mocks.MockOSDetector{
+	                ReturnID: "debian",
+	                ReturnVersionID: "12",
+	        }
 	}
 	defer func() { newDetector = oldNewDetector }()
 
-	oldRunProgram := runProgram
+	oldRunProgramLocal := runProgram
 	runProgram = func(p *tea.Program) (tea.Model, error) {
-		return tui.NewModel(nil), nil
+	        return tui.NewModel(nil, nil), nil
 	}
-	defer func() { runProgram = oldRunProgram }()
+	defer func() { runProgram = oldRunProgramLocal }()
 
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
