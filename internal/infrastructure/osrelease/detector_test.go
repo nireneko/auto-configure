@@ -75,6 +75,72 @@ func TestDetector_ReaderError(t *testing.T) {
 
 func noEnv(string) string { return "" }
 
+func TestDetector_IsWayland(t *testing.T) {
+	content := "ID=debian\nVERSION_ID=\"13\"\n"
+
+	t.Run("XDG_SESSION_TYPE=wayland → IsWayland true", func(t *testing.T) {
+		mockEnv := func(k string) string {
+			if k == "XDG_SESSION_TYPE" {
+				return "wayland"
+			}
+			return ""
+		}
+		det := osrelease.NewDetector(makeReader(content), mockEnv, defaultDE)
+		info, err := det.Detect()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !info.IsWayland {
+			t.Error("expected IsWayland=true when XDG_SESSION_TYPE=wayland")
+		}
+	})
+
+	t.Run("WAYLAND_DISPLAY set → IsWayland true", func(t *testing.T) {
+		mockEnv := func(k string) string {
+			if k == "WAYLAND_DISPLAY" {
+				return "wayland-0"
+			}
+			return ""
+		}
+		det := osrelease.NewDetector(makeReader(content), mockEnv, defaultDE)
+		info, err := det.Detect()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !info.IsWayland {
+			t.Error("expected IsWayland=true when WAYLAND_DISPLAY is set")
+		}
+	})
+
+	t.Run("X11 session → IsWayland false", func(t *testing.T) {
+		mockEnv := func(k string) string {
+			if k == "XDG_SESSION_TYPE" {
+				return "x11"
+			}
+			return ""
+		}
+		det := osrelease.NewDetector(makeReader(content), mockEnv, defaultDE)
+		info, err := det.Detect()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if info.IsWayland {
+			t.Error("expected IsWayland=false for x11 session")
+		}
+	})
+
+	t.Run("no env vars → IsWayland false", func(t *testing.T) {
+		det := osrelease.NewDetector(makeReader(content), noEnv, defaultDE)
+		info, err := det.Detect()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if info.IsWayland {
+			t.Error("expected IsWayland=false when no session env vars are set")
+		}
+	})
+}
+
 func TestDetector_DesktopEnvironment(t *testing.T) {
 	content := "ID=debian\nVERSION_ID=\"12\"\n"
 	

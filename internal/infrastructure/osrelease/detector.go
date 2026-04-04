@@ -63,11 +63,13 @@ func (d *Detector) Detect() (*domain.OSInfo, error) {
 	}
 
 	de := d.detectDE()
+	isWayland := d.envFn("XDG_SESSION_TYPE") == "wayland" || d.envFn("WAYLAND_DISPLAY") != ""
 
 	return &domain.OSInfo{
 		ID:                 id,
 		VersionID:          versionID,
 		DesktopEnvironment: de,
+		IsWayland:          isWayland,
 	}, nil
 }
 

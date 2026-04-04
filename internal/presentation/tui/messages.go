@@ -27,3 +27,6 @@ type StepFinishedMsg struct {
 type AllInstallsDoneMsg struct {
 	Results []domain.InstallResult
 }
+
+// nvidiaConfigDoneMsg is sent when Nvidia config is complete and GitLab token is needed next.
+type nvidiaConfigDoneMsg struct{}

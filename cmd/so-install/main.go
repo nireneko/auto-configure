@@ -17,9 +17,9 @@ import (
 	"github.com/so-install/internal/infrastructure/flatpak"
 	"github.com/so-install/internal/infrastructure/gentleai"
 	"github.com/so-install/internal/infrastructure/gitlab"
-
 	"github.com/so-install/internal/infrastructure/homebrew"
 	"github.com/so-install/internal/infrastructure/npm"
+	"github.com/so-install/internal/infrastructure/nvidia"
 	"github.com/so-install/internal/infrastructure/nvm"
 	"github.com/so-install/internal/infrastructure/ollama"
 	"github.com/so-install/internal/infrastructure/opencode"
@@ -78,7 +78,8 @@ func main() {
 		domain.VsCode:       vscode.NewVsCodeInstaller(executor),
 		domain.Cursor:       cursor.NewCursorInstaller(executor),
 		domain.Antigravity:  antigravity.NewAntigravityInstaller(executor),
-		domain.Flatpak:      flatpak.NewFlatpakInstaller(executor, detector),
+		domain.Flatpak:        flatpak.NewFlatpakInstaller(executor, detector),
+		domain.NvidiaDrivers:  nvidia.NewNvidiaInstaller(executor, osInfo),
 		domain.Bitwarden:    flatpak.NewFlatpakAppInstaller(executor, "com.bitwarden.desktop", domain.Bitwarden),
 		domain.Homebrew:     homebrew.NewHomebrewInstaller(executor),
 		domain.GitlabTokenConfig: gitlab.NewGitlabTokenConfigurator(executor),

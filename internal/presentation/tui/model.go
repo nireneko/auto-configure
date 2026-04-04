@@ -15,6 +15,7 @@ type appState int
 const (
 	stateWelcome appState = iota
 	stateSoftwareSelect
+	stateNvidiaConfig
 	stateTokenInput
 	stateProgress
 	stateSummary
@@ -38,6 +39,12 @@ type Model struct {
 	validationErr string
 	interrupted   bool
 	gitlabToken   string
+
+	// nvidia config sub-state
+	nvidiaConfigStep   int
+	nvidiaDriverCursor int
+	nvidiaDriverType   domain.NvidiaDriverType
+	nvidiaCUDA         bool
 
 	// step-based state
 	steps       []domain.InstallStep
@@ -92,6 +99,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.osInfo = msg.Info
 		return m, m.checkInstalledSoftware()
 
+	case nvidiaConfigDoneMsg:
+		m.state = stateTokenInput
+		m.gitlabToken = ""
+		return m, nil
+
 	case preInstalledCheckDoneMsg:
 		m.preInstalled = msg.results
 		for id, installed := range msg.results {
@@ -104,6 +116,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = stateProgress
 		m.steps = domain.GetSteps()
 		m.currentStep = 0
+
+		// Inject Nvidia options if applicable
+		if inst, ok := m.installers[domain.NvidiaDrivers]; ok {
+			if cfg, ok := inst.(interface {
+				SetOptions(domain.NvidiaDriverType, bool)
+			}); ok {
+				cfg.SetOptions(m.nvidiaDriverType, m.nvidiaCUDA)
+			}
+		}
 
 		// Inject token into Gitlab configurator if it exists
 		if inst, ok := m.installers[domain.GitlabTokenConfig]; ok {
@@ -160,7 +181,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case stateSoftwareSelect:
-		software := domain.AllSoftware()
+		software := m.visibleSoftware()
 		switch msg.String() {
 		case "up", "k":
 			m.cursor = (m.cursor - 1 + len(software)) % len(software)
@@ -179,6 +200,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// Prepend mandatory system prep steps
 			m.selected = append([]domain.SoftwareID{domain.SystemUpdate, domain.BaseDeps}, sel...)
 
+			// If Nvidia selected on Debian 13, collect driver preferences first
+			if m.checked[domain.NvidiaDrivers] && m.isDebian13() {
+				m.state = stateNvidiaConfig
+				m.nvidiaConfigStep = 0
+				m.nvidiaDriverCursor = 0
+				return m, nil
+			}
+
 			// If gitlab config is selected, go to token input state
 			if m.checked[domain.GitlabTokenConfig] {
 				m.state = stateTokenInput
@@ -189,6 +218,46 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, func() tea.Msg { return startInstallMsg{} }
 		case "q", "ctrl+c":
 			return m, tea.Quit
+		}
+
+	case stateNvidiaConfig:
+		nvidiaOptions := []domain.NvidiaDriverType{
+			domain.NvidiaFree,
+			domain.NvidiaProprietaryDebian,
+			domain.NvidiaProprietaryNvidia,
+		}
+		switch m.nvidiaConfigStep {
+		case 0:
+			switch msg.String() {
+			case "up", "k":
+				m.nvidiaDriverCursor = (m.nvidiaDriverCursor - 1 + len(nvidiaOptions)) % len(nvidiaOptions)
+			case "down", "j":
+				m.nvidiaDriverCursor = (m.nvidiaDriverCursor + 1) % len(nvidiaOptions)
+			case "enter":
+				m.nvidiaDriverType = nvidiaOptions[m.nvidiaDriverCursor]
+				if m.nvidiaDriverType == domain.NvidiaFree {
+					m.nvidiaCUDA = false
+					return m, m.nextAfterNvidiaConfig()
+				}
+				m.nvidiaConfigStep = 1
+			case "esc":
+				m.state = stateSoftwareSelect
+			case "q", "ctrl+c":
+				return m, tea.Quit
+			}
+		case 1:
+			switch msg.String() {
+			case "y", "Y":
+				m.nvidiaCUDA = true
+				return m, m.nextAfterNvidiaConfig()
+			case "n", "N", "enter":
+				m.nvidiaCUDA = false
+				return m, m.nextAfterNvidiaConfig()
+			case "esc":
+				m.nvidiaConfigStep = 0
+			case "q", "ctrl+c":
+				return m, tea.Quit
+			}
 		}
 
 	case stateTokenInput:
@@ -240,6 +309,8 @@ func (m Model) View() string {
 		return m.viewWelcome()
 	case stateSoftwareSelect:
 		return m.viewSoftwareSelect()
+	case stateNvidiaConfig:
+		return m.viewNvidiaConfig()
 	case stateTokenInput:
 		return m.viewTokenInput()
 	case stateProgress:
@@ -252,12 +323,42 @@ func (m Model) View() string {
 
 func (m Model) getSelected() []domain.SoftwareID {
 	var sel []domain.SoftwareID
-	for _, id := range domain.AllSoftware() {
+	for _, id := range m.visibleSoftware() {
 		if m.checked[id] {
 			sel = append(sel, id)
 		}
 	}
 	return sel
+}
+
+// visibleSoftware returns software available for the current OS.
+// NvidiaDrivers is only shown on Debian 13.
+func (m Model) visibleSoftware() []domain.SoftwareID {
+	all := domain.AllSoftware()
+	if m.isDebian13() {
+		return all
+	}
+	result := make([]domain.SoftwareID, 0, len(all))
+	for _, id := range all {
+		if id != domain.NvidiaDrivers {
+			result = append(result, id)
+		}
+	}
+	return result
+}
+
+// isDebian13 reports whether the current OS is Debian 13.
+func (m Model) isDebian13() bool {
+	return m.osInfo != nil && m.osInfo.ID == "debian" && m.osInfo.VersionID == "13"
+}
+
+// nextAfterNvidiaConfig returns the cmd to fire after Nvidia config is complete.
+// State mutation (e.g. stateTokenInput) must be handled in the Update message handler.
+func (m Model) nextAfterNvidiaConfig() tea.Cmd {
+	if m.checked[domain.GitlabTokenConfig] {
+		return func() tea.Msg { return nvidiaConfigDoneMsg{} }
+	}
+	return func() tea.Msg { return startInstallMsg{} }
 }
 
 // detectOSCmd emits osInfo (already set by main.go) as an OSDetectedMsg to trigger
@@ -336,7 +437,7 @@ func (m Model) viewWelcome() string {
 
 func (m Model) viewSoftwareSelect() string {
 	out := "\n  Select software to install:\n\n"
-	for i, id := range domain.AllSoftware() {
+	for i, id := range m.visibleSoftware() {
 		cursor := "  "
 		if i == m.cursor {
 			cursor = "> "
@@ -356,6 +457,33 @@ func (m Model) viewSoftwareSelect() string {
 	}
 	out += "\n  Space: toggle  •  Enter: confirm  •  q: quit\n"
 	return out
+}
+
+func (m Model) viewNvidiaConfig() string {
+	switch m.nvidiaConfigStep {
+	case 0:
+		options := []string{
+			"Free (Nouveau + firmware-nvidia-graphics)",
+			"Proprietary — Debian repository",
+			"Proprietary — Official Nvidia repository (latest)",
+		}
+		out := "\n  Nvidia Driver Configuration:\n\n"
+		out += "  Select driver type:\n\n"
+		for i, label := range options {
+			cursor := "  "
+			if i == m.nvidiaDriverCursor {
+				cursor = "> "
+			}
+			out += cursor + label + "\n"
+		}
+		out += "\n  Up/Down: select  •  Enter: confirm  •  Esc: back\n"
+		return out
+	case 1:
+		out := "\n  Nvidia Driver Configuration:\n\n"
+		out += "  Install CUDA toolkit? [y/N]: "
+		return out
+	}
+	return ""
 }
 
 func (m Model) viewTokenInput() string {
@@ -453,6 +581,15 @@ func (m Model) viewSummary() string {
 		out += "  Skipped: " + strconv.Itoa(skipped)
 	}
 	out += "\n"
+
+	// Reboot reminder when Nvidia drivers were installed successfully
+	for _, r := range m.results {
+		if r.Software == domain.NvidiaDrivers && r.Err == nil && !r.AlreadyInstalled {
+			out += "\n  ! Reboot required to load the new Nvidia driver.\n"
+			break
+		}
+	}
+
 	out += "\n  Press Enter or q to exit\n"
 	return out
 }

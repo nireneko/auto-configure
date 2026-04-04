@@ -14,6 +14,7 @@ type OSInfo struct {
 	ID                 string // e.g. "debian"
 	VersionID          string // e.g. "12"
 	DesktopEnvironment DesktopEnvironment
+	IsWayland          bool // true when XDG_SESSION_TYPE==wayland or WAYLAND_DISPLAY is set
 }
 
 // OSDetector abstracts OS detection for testability.

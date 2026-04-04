@@ -22,12 +22,22 @@ const (
 	Homebrew  SoftwareID = "homebrew"
 	GitlabTokenConfig SoftwareID = "gitlab-token-config"
 	ScreenLockConfig  SoftwareID = "screen-lock-config"
-	Ollama   SoftwareID = "ollama"
-	OpenCode SoftwareID = "opencode"
-	GentleAI SoftwareID = "gentle-ai"
-	VsCode   SoftwareID = "vscode"
-	Cursor   SoftwareID = "cursor"
-	Antigravity SoftwareID = "antigravity"
+	Ollama        SoftwareID = "ollama"
+	OpenCode      SoftwareID = "opencode"
+	GentleAI      SoftwareID = "gentle-ai"
+	VsCode        SoftwareID = "vscode"
+	Cursor        SoftwareID = "cursor"
+	Antigravity   SoftwareID = "antigravity"
+	NvidiaDrivers SoftwareID = "nvidia-drivers"
+)
+
+// NvidiaDriverType identifies the type of Nvidia driver to install.
+type NvidiaDriverType string
+
+const (
+	NvidiaFree              NvidiaDriverType = "free"
+	NvidiaProprietaryDebian NvidiaDriverType = "proprietary-debian"
+	NvidiaProprietaryNvidia NvidiaDriverType = "proprietary-nvidia"
 )
 
 // InstallStep defines a group of software to be installed together.
@@ -95,12 +105,17 @@ func GetSteps() []InstallStep {
 			Software: []SoftwareID{Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig},
 			Critical: false,
 		},
+		{
+			ID:       "nvidia",
+			Software: []SoftwareID{NvidiaDrivers},
+			Critical: false,
+		},
 	}
 }
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Ollama, OpenCode, GentleAI, VsCode, Cursor, Antigravity, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Ollama, OpenCode, GentleAI, VsCode, Cursor, Antigravity, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig, NvidiaDrivers}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -154,6 +169,8 @@ func (s SoftwareID) DisplayName() string {
 		return "Cursor IDE"
 	case Antigravity:
 		return "Google Antigravity"
+	case NvidiaDrivers:
+		return "Nvidia Drivers"
 	default:
 		return string(s)
 	}
