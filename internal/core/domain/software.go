@@ -22,8 +22,6 @@ const (
 	Homebrew  SoftwareID = "homebrew"
 	GitlabTokenConfig SoftwareID = "gitlab-token-config"
 	ScreenLockConfig  SoftwareID = "screen-lock-config"
-	Ollama        SoftwareID = "ollama"
-	OpenCode      SoftwareID = "opencode"
 	GentleAI      SoftwareID = "gentle-ai"
 	VsCode        SoftwareID = "vscode"
 	Cursor        SoftwareID = "cursor"
@@ -82,7 +80,7 @@ func GetSteps() []InstallStep {
 		},
 		{
 			ID:       "ai-cli",
-			Software: []SoftwareID{Gemini, ClaudeCode, Codex, Ollama, OpenCode},
+			Software: []SoftwareID{Gemini, ClaudeCode, Codex},
 			Critical: false,
 		},
 		{
@@ -115,7 +113,7 @@ func GetSteps() []InstallStep {
 
 // AllSoftware returns all supported software in display order.
 func AllSoftware() []SoftwareID {
-	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, Ollama, OpenCode, GentleAI, VsCode, Cursor, Antigravity, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig, NvidiaDrivers}
+	return []SoftwareID{Brave, Firefox, Chrome, Chromium, Docker, Ddev, OpenVpn, Nvm, Gemini, ClaudeCode, Codex, GentleAI, VsCode, Cursor, Antigravity, Flatpak, Bitwarden, Homebrew, GitlabTokenConfig, ScreenLockConfig, NvidiaDrivers}
 }
 
 // DisplayName returns a human-readable name for the software.
@@ -157,10 +155,6 @@ func (s SoftwareID) DisplayName() string {
 		return "Gitlab Token Configuration (Composer/NPM)"
 	case ScreenLockConfig:
 		return "Screen Lock Configuration"
-	case Ollama:
-		return "Ollama"
-	case OpenCode:
-		return "OpenCode"
 	case GentleAI:
 		return "Gentle-AI"
 	case VsCode:

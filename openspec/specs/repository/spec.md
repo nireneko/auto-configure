@@ -59,4 +59,4 @@ The repository MUST contain a `README.md` file in the root directory that provid
 #### Scenario: Verify Installation Modules list
 - GIVEN the `README.md` file is opened
 - WHEN reviewing the list of what the tool can install
-- THEN it MUST include (at a minimum): browsers (Brave, Chrome, Chromium, Firefox), docker, ddev, flatpak, ollama, homebrew, nvm, npm, and openvpn
+- THEN it MUST include (at a minimum): browsers (Brave, Chrome, Chromium, Firefox), docker, ddev, flatpak, homebrew, nvm, npm, and openvpn

@@ -30,8 +30,6 @@ func TestSoftwareID_DisplayName(t *testing.T) {
 		{domain.Homebrew, "Homebrew"},
 		{domain.GitlabTokenConfig, "Gitlab Token Configuration (Composer/NPM)"},
 		{domain.ScreenLockConfig, "Screen Lock Configuration"},
-		{domain.Ollama, "Ollama"},
-		{domain.OpenCode, "OpenCode"},
 		{domain.GentleAI, "Gentle-AI"},
 		{domain.VsCode, "Visual Studio Code"},
 		{domain.Cursor, "Cursor IDE"},
@@ -51,7 +49,7 @@ func TestGetSteps(t *testing.T) {
 	assert.NotEmpty(t, steps)
 }
 
-func TestGetSteps_AiCli_ContainsOllamaAndOpenCode(t *testing.T) {
+func TestGetSteps_AiCli_ContainsTools(t *testing.T) {
 	steps := domain.GetSteps()
 	var aiCliStep *domain.InstallStep
 	for i := range steps {
@@ -63,8 +61,9 @@ func TestGetSteps_AiCli_ContainsOllamaAndOpenCode(t *testing.T) {
 	if aiCliStep == nil {
 		t.Fatal("ai-cli step not found in GetSteps()")
 	}
-	assert.Contains(t, aiCliStep.Software, domain.Ollama)
-	assert.Contains(t, aiCliStep.Software, domain.OpenCode)
+	assert.Contains(t, aiCliStep.Software, domain.Gemini)
+	assert.Contains(t, aiCliStep.Software, domain.ClaudeCode)
+	assert.Contains(t, aiCliStep.Software, domain.Codex)
 }
 
 func TestAllSoftware(t *testing.T) {
@@ -91,7 +90,7 @@ func TestGetSteps_GentleAI_IsAfterAiCli(t *testing.T) {
 	assert.NotEqual(t, -1, aiCliIdx, "ai-cli step not found")
 	assert.NotEqual(t, -1, gentleAiIdx, "gentle-ai step not found")
 	assert.Equal(t, aiCliIdx+1, gentleAiIdx, "gentle-ai step must be immediately after ai-cli")
-	
+
 	// Also check content
 	var gentleAiStep domain.InstallStep
 	for _, step := range steps {

@@ -259,7 +259,7 @@ The `ShellExecutor` MUST set `Setpgid: true` on `SysProcAttr` so that the child 
 - AND the executor MUST return once the parent script process exits or the timeout fires
 
 #### Scenario: Daemon does not prevent executor from returning
-- GIVEN the Ollama or OpenCode install script starts a background service
+- GIVEN an install script starts a background service
 - WHEN `Execute()` is called
 - THEN the executor MUST return a result (success or timeout error) without hanging
 

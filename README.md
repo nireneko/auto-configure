@@ -23,8 +23,6 @@ The tool allows you to install and configure a wide range of software, categoriz
 ### Development & Tools
 - **Docker:** Container engine.
 - **DDEV:** Local development environment based on Docker.
-- **Ollama:** Local execution of LLMs (Large Language Models).
-- **VS Code (OpenCode):** Fork of VS Code with optimized configurations.
 - **NVM & NPM:** Node.js version management and global packages.
 - **Homebrew:** Alternative package manager.
 

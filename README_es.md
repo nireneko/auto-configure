@@ -23,8 +23,6 @@ La herramienta permite instalar y configurar una amplia gama de software, catego
 ### Desarrollo y Herramientas
 - **Docker:** Motor de contenedores.
 - **DDEV:** Entorno de desarrollo local basado en Docker.
-- **Ollama:** Ejecución local de modelos de lenguaje (LLM).
-- **VS Code (OpenCode):** Fork de VS Code con configuraciones optimizadas.
 - **NVM & NPM:** Gestión de versiones de Node.js y paquetes globales.
 - **Homebrew:** Gestor de paquetes alternativo.
 
