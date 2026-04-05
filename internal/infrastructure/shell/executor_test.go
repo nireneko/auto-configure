@@ -42,7 +42,7 @@ func TestShellExecutor_CapturesStderr(t *testing.T) {
 }
 
 func TestShellExecutor_Timeout(t *testing.T) {
-	ex := shell.NewShellExecutorWithTimeout(500 * time.Millisecond, nil)
+	ex := shell.NewShellExecutorWithTimeout(500*time.Millisecond, 5*time.Second, nil)
 	start := time.Now()
 	_, _, err := ex.Execute("sh", "-c", "sleep 999")
 	elapsed := time.Since(start)
@@ -58,7 +58,7 @@ func TestShellExecutor_DaemonDoesNotHang(t *testing.T) {
 	// sh exits immediately after forking sleep to the background.
 	// sleep inherits the stdout/stderr pipes, which would block cmd.Run() forever
 	// without WaitDelay. With WaitDelay = 500ms, Execute returns after ~500ms.
-	ex := shell.NewShellExecutorWithTimeout(500 * time.Millisecond, nil)
+	ex := shell.NewShellExecutorWithTimeout(10*time.Minute, 500*time.Millisecond, nil)
 	start := time.Now()
 	_, _, _ = ex.Execute("sh", "-c", "sleep 999 &")
 	elapsed := time.Since(start)

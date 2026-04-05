@@ -11,29 +11,42 @@ import (
 	"github.com/so-install/internal/core/domain"
 )
 
-const defaultTimeout = 10 * time.Minute
+const (
+	defaultTimeout   = 10 * time.Minute
+	defaultWaitDelay = 5 * time.Second
+)
 
 // ShellExecutor runs real shell commands using os/exec.
 type ShellExecutor struct {
-	timeout time.Duration
-	logger  domain.Logger
+	timeout   time.Duration
+	waitDelay time.Duration
+	logger    domain.Logger
 }
 
-// NewShellExecutor creates a ShellExecutor with the default 10-minute timeout and a logger.
+// NewShellExecutor creates a ShellExecutor with the default 10-minute timeout,
+// 5-second wait delay, and a logger.
 func NewShellExecutor(logger domain.Logger) *ShellExecutor {
 	if logger == nil {
 		logger = domain.NoopLogger{}
 	}
-	return &ShellExecutor{timeout: defaultTimeout, logger: logger}
+	return &ShellExecutor{
+		timeout:   defaultTimeout,
+		waitDelay: defaultWaitDelay,
+		logger:    logger,
+	}
 }
 
-// NewShellExecutorWithTimeout creates a ShellExecutor with a custom timeout.
+// NewShellExecutorWithTimeout creates a ShellExecutor with a custom timeout and wait delay.
 // Intended for use in tests.
-func NewShellExecutorWithTimeout(d time.Duration, logger domain.Logger) *ShellExecutor {
+func NewShellExecutorWithTimeout(timeout, waitDelay time.Duration, logger domain.Logger) *ShellExecutor {
 	if logger == nil {
 		logger = domain.NoopLogger{}
 	}
-	return &ShellExecutor{timeout: d, logger: logger}
+	return &ShellExecutor{
+		timeout:   timeout,
+		waitDelay: waitDelay,
+		logger:    logger,
+	}
 }
 
 var _ domain.Executor = (*ShellExecutor)(nil)
@@ -59,12 +72,11 @@ func (e *ShellExecutor) Execute(name string, args ...string) (stdout, stderr str
 
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.WaitDelay = e.timeout
+	cmd.WaitDelay = e.waitDelay
 	cmd.Cancel = func() error {
 		e.logger.Error("command timeout, killing process group", "command", name)
 		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
-
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
